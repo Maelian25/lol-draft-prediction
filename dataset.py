@@ -137,22 +137,21 @@ class Dataset():
                 
                 # Extracting bans
                 for team in teams:
-                    team_id = "BLUE_SIDE" if team.get("teamId") == 100 else "RED_SIDE"
+                    team_id = "blue" if team.get("teamId") == 100 else "red"
                     if team_id:
-                        bans[team_id] = [{champ["championId"] : order + 1} for order, champ in enumerate(team.get("bans", []))]
+                        bans= [{"side" : team_id, "championId" : champ["championId"], "order" : order + 1} for order, champ in enumerate(team.get("bans", []))]
                 
-                    for x in bans[team_id]:
-                        for key, _ in x.items():
-                            if key == -1 :
-                                missing_ban = True
-                    replace_missed_bans(bans[team_id])
+                    for b in bans:
+                        if b["championId"] == -1 :
+                            missing_ban = True
+                    replace_missed_bans(bans)
                                 
                 if missing_ban :
                     game_missing_ban_count +=1            
                 
                 # Extracting picks
                 for p in participants:
-                    team_id = "BLUE_SIDE" if p.get("teamId") == 100 else "RED_SIDE"
+                    team_id = "blue" if p.get("teamId") == 100 else "red"
                     position = p.get("teamPosition") if p.get("teamPosition") != "UTILITY" else "SUPPORT"
                     champ = p.get("championId")
                     

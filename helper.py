@@ -70,20 +70,18 @@ def replace_missed_bans(bans):
     
     champions_id_and_name = [{int(champion_data[name]["key"]) : champion_data[name]["name"]} for name in champion_data ]
     
-    used_champ_ids = [list(b.keys())[0] for b in bans if list(b.keys())[0] != -1]
+    used_champ_ids = [b["championId"] for b in bans if b["championId"] != -1]
     champ_replacement = random.choice(list(champions_id_and_name))
     
-    for x in bans:
-        # Get the current key of the ban
-        current_key = list(x.keys())[0]
-
-        if current_key == -1:
+    for b in bans:
+        if b["championId"] == -1:
             champ_replacement = random.choice(list(champions_id_and_name))
-            new_key = list(champ_replacement.keys())[0]
-            while new_key in used_champ_ids:
-                champ_replacement = random.choice(champions_id_and_name)
-                new_key = list(champ_replacement.keys())[0]
+            new_champ = list(champ_replacement.keys())[0]
             
-            x[new_key] = x.pop(current_key)
-            used_champ_ids.append(new_key)
+            while new_champ in used_champ_ids:
+                champ_replacement = random.choice(champions_id_and_name)
+                new_champ = list(champ_replacement.keys())[0]
+            
+            b["championId"] = new_champ
+            used_champ_ids.append(new_champ)
         
