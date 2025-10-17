@@ -1,4 +1,5 @@
 from helper import convert_unix_timestamp_to_date, replace_missed_bans, riot_request, save_json_to_dir, shuffle_picks_order_with_weights
+from dotenv import load_dotenv
 from tqdm import tqdm
 import logging
 import os
@@ -16,7 +17,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 ################# CONSTANTS #################
-API_KEY = "RGAPI-4c99730c-230c-4998-862e-22a1a49591e7" # Need to change it every 24 hours
+load_dotenv("secrets/api_keys.key")
+API_KEY = os.getenv("RIOT_API_KEY")
 HEADERS = {"X-Riot-Token" : API_KEY}
 SAVE_AFTER_ITERATION = 1000
 
@@ -178,7 +180,7 @@ class Dataset():
                 logger.error(f"Error when dealing with match {game_id}: {e}")
                 continue
         
-        save_json_to_dir(game_data, "Datasets", self.region, len(game_data))
+        save_json_to_dir(game_data, "datasets", self.region, len(game_data))
         
         logger.info(f"Extraction finished: {len(game_data)} matches successfully analyzed")
         logger.info(f"Games with at least one missing ban: {game_missing_ban_count}, thus modified so it can be used")

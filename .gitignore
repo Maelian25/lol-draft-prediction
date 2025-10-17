@@ -1,3 +1,17 @@
+# ===================================
+# League of Legends Draft Prediction
+# .gitignore
+# ===================================
+
+# ============ SECRETS ============
+# CRITICAL: Never commit API keys!
+.env
+.env.local
+.env.*.local
+*.key
+secrets/
+config/secrets.json
+
 # ============ PYTHON ============
 # Byte-compiled / optimized / DLL files
 __pycache__/
