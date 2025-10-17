@@ -18,7 +18,7 @@ A machine learning project to predict optimal champion picks during the draft ph
 - [Usage](#-usage)
 - [Dataset Structure](#-dataset-structure)
 - [Machine Learning Pipeline](#-machine-learning-pipeline)
-- [Roadmap](#-roadmap)
+- [Roadmap](#%EF%B8%8F-roadmap)
 
 ---
 
