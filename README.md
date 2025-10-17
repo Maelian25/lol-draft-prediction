@@ -221,10 +221,10 @@ python train_model.py --data Datasets/latest.json --model xgboost
 
 ```json
 {
-  "match_id": "EUW1_1234567890",
+  "match_id": "EUW1_7566749902",
   "game_version": "15.20",
-  "game_duration": 30.5,
-  "game_creation": "15/10/2025",
+  "game_duration": 36.85,
+  "game_creation": "2025-10-13 16:18:36",
   "blue_side_win": true,
   
   "bans": [
