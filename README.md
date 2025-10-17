@@ -74,7 +74,7 @@ lol-draft-prediction/
 │   └── REGION_picks_and_bans_YYYYMMDD_HHMMSS.json
 │
 ├── logs/                   # Log files
-│   └── riot_dataset.log
+│   └── data_scrapping.log
 │
 ├── models/                 # Trained ML models (future)
 │
