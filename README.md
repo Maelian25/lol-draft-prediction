@@ -66,11 +66,11 @@ The model is trained on real Challenger/Grandmaster ranked games collected via t
 
 ```
 lol-draft-prediction/
+│   src
+|   └── dataset.py              # Main data collection script (improved version)
+|   └── helper.py               # API request utilities and helper functions
 │
-├── dataset.py              # Main data collection script (improved version)
-├── helper.py               # API request utilities and helper functions
-│
-├── Datasets/               # Collected match data (JSON files)
+├── datasets/               # Collected match data (JSON files)
 │   └── REGION_picks_and_bans_YYYYMMDD_HHMMSS.json
 │
 ├── logs/                   # Log files
@@ -78,9 +78,11 @@ lol-draft-prediction/
 │
 ├── models/                 # Trained ML models (future)
 │
-├── requirements.txt        # Python dependencies
-├── .gitignore             # Git ignore file
-└── README.md              # This file
+├── requirements.txt           # Python dependencies
+├── .gitignore                 # Git ignore file
+├── pyproject.toml             # Formatter config
+├── .pre-commit-config.yaml    # Pre-commit config
+└── README.md                  # This file
 ```
 
 ---
