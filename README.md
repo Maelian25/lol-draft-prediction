@@ -19,8 +19,6 @@ A machine learning project to predict optimal champion picks during the draft ph
 - [Dataset Structure](#-dataset-structure)
 - [Machine Learning Pipeline](#-machine-learning-pipeline)
 - [Roadmap](#-roadmap)
-- [Contributing](#-contributing)
-- [License](#-license)
 
 ---
 
@@ -440,7 +438,6 @@ Average Game Duration: 28.5 minutes
 This project is for educational and research purposes only. 
 
 - This project is not endorsed by Riot Games
-- Use at your own risk
 - Respect Riot's API Terms of Service
 - Do not use for commercial purposes without proper authorization
 - The predictions are probabilistic and should not be considered absolute
