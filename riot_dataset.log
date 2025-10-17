@@ -1,0 +1,1009 @@
+2025-10-16 02:33:33,468 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 02:33:33,469 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 02:33:33,469 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 02:33:35,177 - INFO - Number of challenger players found : 300
+2025-10-16 02:33:35,177 - INFO - Getting matchs for 10 players...
+2025-10-16 02:33:50,277 - INFO - Total of unique matches found: 895
+2025-10-16 02:33:50,277 - INFO - Extracting data for 895 matches...
+2025-10-16 02:57:35,647 - INFO - Extraction finished: 895 matches successfully analyzed
+2025-10-16 02:57:35,668 - INFO - Dataset successfully saved: 895 matchs
+2025-10-16 03:13:44,836 - CRITICAL - Fatal error: 'Dataset' object has no attribute 'match_host'
+Traceback (most recent call last):
+  File "c:\Users\Maëlian\Documents\Maelian_Projects\bot_draft\dataset.py", line 159, in <module>
+    europe_dataset = Dataset(
+        region="EUROPE",
+    ...<2 lines>...
+        player_count=10
+    )
+  File "c:\Users\Maëlian\Documents\Maelian_Projects\bot_draft\dataset.py", line 38, in __init__
+    request_url = f"https://{self.match_host}{self.match_data_url}EUW1_7554733985"
+                             ^^^^^^^^^^^^^^^
+AttributeError: 'Dataset' object has no attribute 'match_host'
+2025-10-16 03:14:12,969 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 03:14:12,970 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 03:18:48,732 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 03:18:48,732 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 03:19:05,376 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 03:19:05,377 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 03:19:47,739 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 03:19:47,739 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 14:45:56,799 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 14:45:56,799 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 14:45:56,800 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 14:45:57,145 - ERROR - Error 401 : {"status":{"message":"Unknown apikey","status_code":401}}
+2025-10-16 14:45:57,146 - ERROR - Failed to get the challenger player list
+2025-10-16 14:45:57,146 - INFO - Getting matchs for 0 players...
+2025-10-16 14:45:57,180 - INFO - Total of unique matches found: 0
+2025-10-16 14:45:57,180 - CRITICAL - Fatal error: list index out of range
+Traceback (most recent call last):
+  File "c:\Users\Maëlian\Documents\Maelian_Projects\bot_draft\dataset.py", line 183, in <module>
+    europe_dataset.extract_from_timeline(match_id=list(match_ids)[0])
+                                                  ~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+2025-10-16 14:49:16,970 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 14:49:16,971 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 14:49:16,971 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 14:49:17,254 - ERROR - Error 401 : {"status":{"message":"Unknown apikey","status_code":401}}
+2025-10-16 14:49:17,255 - ERROR - Failed to get the challenger player list
+2025-10-16 14:49:17,255 - INFO - Getting matchs for 0 players...
+2025-10-16 14:49:17,264 - INFO - Total of unique matches found: 0
+2025-10-16 14:49:17,264 - CRITICAL - Fatal error: list index out of range
+Traceback (most recent call last):
+  File "c:\Users\Maëlian\Documents\Maelian_Projects\bot_draft\dataset.py", line 183, in <module>
+    europe_dataset.extract_from_timeline(match_id=list(match_ids)[0])
+                                                  ~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+2025-10-16 14:55:00,061 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 14:55:00,061 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 14:55:00,061 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 14:55:01,785 - INFO - Number of challenger players found : 300
+2025-10-16 14:55:01,785 - INFO - Getting matchs for 1 players...
+2025-10-16 14:55:03,314 - INFO - Total of unique matches found: 1
+2025-10-16 14:55:05,086 - INFO - Getting matchs for 1 players...
+2025-10-16 14:55:06,559 - INFO - Total of unique matches found: 1
+2025-10-16 14:55:06,560 - INFO - Extracting data for 1 matches...
+2025-10-16 14:55:08,107 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 14:55:08,121 - INFO - Dataset successfully saved: 1 matchs
+2025-10-16 18:05:43,595 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:05:43,595 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:05:43,595 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:05:45,432 - INFO - Number of challenger players found : 300
+2025-10-16 18:05:45,432 - INFO - Getting matchs for 1 players...
+2025-10-16 18:05:47,020 - INFO - Total of unique matches found: 1
+2025-10-16 18:05:47,020 - INFO - Extracting data for 1 matches...
+2025-10-16 18:05:48,589 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 18:05:48,632 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 18:06:37,666 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:06:37,667 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:06:37,667 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:06:39,465 - INFO - Number of challenger players found : 300
+2025-10-16 18:06:39,466 - INFO - Getting matchs for 1 players...
+2025-10-16 18:06:40,976 - INFO - Total of unique matches found: 1
+2025-10-16 18:06:40,976 - INFO - Extracting data for 1 matches...
+2025-10-16 18:06:42,529 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 18:06:42,530 - INFO - File saved : Datasets/picks_bans_20251016_180642.json.
+2025-10-16 18:06:42,531 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 18:11:16,491 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:11:16,491 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:11:16,491 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:11:18,217 - INFO - Number of challenger players found : 300
+2025-10-16 18:11:18,218 - INFO - Getting matchs for 1 players...
+2025-10-16 18:11:19,751 - INFO - Total of unique matches found: 1
+2025-10-16 18:11:19,751 - INFO - Extracting data for 1 matches...
+2025-10-16 18:11:21,316 - ERROR - Error when dealing with match EUW1_7566749902: [Errno 22] Invalid argument
+2025-10-16 18:11:21,316 - INFO - Extraction finished: 0 matches successfully analyzed
+2025-10-16 18:11:21,317 - INFO - File saved : Datasets/picks_bans_20251016_181121.json.
+2025-10-16 18:11:21,317 - INFO - Dataset successfully saved: 0 matches
+2025-10-16 18:11:50,971 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:11:50,971 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:11:50,971 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:11:52,739 - INFO - Number of challenger players found : 300
+2025-10-16 18:11:52,739 - INFO - Getting matchs for 1 players...
+2025-10-16 18:11:54,250 - INFO - Total of unique matches found: 1
+2025-10-16 18:11:54,250 - INFO - Extracting data for 1 matches...
+2025-10-16 18:11:55,825 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 18:11:55,826 - ERROR - Unexpected error when saving : Object of type datetime is not JSON serializable
+2025-10-16 18:11:55,826 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 18:12:44,379 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:12:44,379 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:12:44,380 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:12:46,022 - INFO - Number of challenger players found : 300
+2025-10-16 18:12:46,022 - INFO - Getting matchs for 1 players...
+2025-10-16 18:12:47,613 - INFO - Total of unique matches found: 1
+2025-10-16 18:12:47,613 - INFO - Extracting data for 1 matches...
+2025-10-16 18:12:49,194 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 18:12:49,195 - INFO - File saved : Datasets/picks_bans_20251016_181249.json.
+2025-10-16 18:12:49,195 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 18:19:44,204 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:19:44,204 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:19:44,204 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:19:45,922 - INFO - Number of challenger players found : 300
+2025-10-16 18:19:45,922 - INFO - Getting matchs for 1 players...
+2025-10-16 18:19:47,481 - INFO - Total of unique matches found: 1
+2025-10-16 18:19:47,481 - INFO - Extracting data for 1 matches...
+2025-10-16 18:19:49,070 - ERROR - Error when dealing with match EUW1_7566749902: string indices must be integers, not 'str'
+2025-10-16 18:19:49,071 - INFO - Extraction finished: 0 matches successfully analyzed
+2025-10-16 18:19:49,072 - INFO - File saved : Datasets/picks_bans_20251016_181949.json.
+2025-10-16 18:19:49,072 - INFO - Dataset successfully saved: 0 matches
+2025-10-16 18:21:06,978 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:21:06,978 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:21:06,978 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:21:08,907 - INFO - Number of challenger players found : 300
+2025-10-16 18:21:08,908 - INFO - Getting matchs for 1 players...
+2025-10-16 18:21:10,508 - INFO - Total of unique matches found: 1
+2025-10-16 18:21:10,508 - INFO - Extracting data for 1 matches...
+2025-10-16 18:21:12,111 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 18:21:12,112 - INFO - File saved : Datasets/picks_bans_20251016_182112.json.
+2025-10-16 18:21:12,112 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 18:22:58,540 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:22:58,541 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:22:58,541 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:23:00,209 - INFO - Number of challenger players found : 300
+2025-10-16 18:23:00,209 - INFO - Getting matchs for 1 players...
+2025-10-16 18:23:01,771 - INFO - Total of unique matches found: 1
+2025-10-16 18:23:01,771 - INFO - Extracting data for 1 matches...
+2025-10-16 18:23:03,993 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 18:23:03,994 - INFO - File saved : Datasets/picks_bans_20251016_182303.json.
+2025-10-16 18:23:03,994 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 18:23:16,679 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:23:16,680 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:23:16,680 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:23:18,325 - INFO - Number of challenger players found : 300
+2025-10-16 18:23:18,325 - INFO - Getting matchs for 1 players...
+2025-10-16 18:23:19,843 - INFO - Total of unique matches found: 1
+2025-10-16 18:23:19,843 - INFO - Extracting data for 1 matches...
+2025-10-16 18:23:21,566 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 18:23:21,567 - INFO - File saved : Datasets/picks_bans_20251016_182321.json.
+2025-10-16 18:23:21,567 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 18:25:38,407 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:25:38,407 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:25:38,407 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:25:40,150 - INFO - Number of challenger players found : 300
+2025-10-16 18:25:40,150 - INFO - Getting matchs for 1 players...
+2025-10-16 18:25:41,894 - INFO - Total of unique matches found: 1
+2025-10-16 18:25:41,894 - INFO - Extracting data for 1 matches...
+2025-10-16 18:25:43,442 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 18:25:43,442 - INFO - File saved : Datasets/picks_bans_20251016_182543.json.
+2025-10-16 18:25:43,443 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 18:26:05,637 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:26:05,637 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:26:05,637 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:26:07,245 - INFO - Number of challenger players found : 300
+2025-10-16 18:26:07,245 - INFO - Getting matchs for 1 players...
+2025-10-16 18:26:08,756 - INFO - Total of unique matches found: 1
+2025-10-16 18:26:08,756 - INFO - Extracting data for 1 matches...
+2025-10-16 18:26:10,307 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 18:26:10,308 - INFO - File saved : Datasets/picks_bans_20251016_182610.json.
+2025-10-16 18:26:10,308 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 18:40:00,834 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:40:00,834 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:40:00,834 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:40:02,524 - INFO - Number of challenger players found : 300
+2025-10-16 18:40:02,525 - INFO - Getting matchs for 1 players...
+2025-10-16 18:40:04,083 - INFO - Total of unique matches found: 1
+2025-10-16 18:40:04,083 - INFO - Extracting data for 1 matches...
+2025-10-16 18:40:05,723 - ERROR - Error when dealing with match EUW1_7566749902: dictionary update sequence element #0 has length 6; 2 is required
+2025-10-16 18:40:05,724 - INFO - Extraction finished: 0 matches successfully analyzed
+2025-10-16 18:40:05,724 - INFO - File saved : Datasets/picks_bans_20251016_184005.json.
+2025-10-16 18:40:05,725 - INFO - Dataset successfully saved: 0 matches
+2025-10-16 18:40:52,091 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:40:52,091 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:40:52,092 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:40:53,697 - INFO - Number of challenger players found : 300
+2025-10-16 18:40:53,697 - INFO - Getting matchs for 1 players...
+2025-10-16 18:40:55,215 - INFO - Total of unique matches found: 1
+2025-10-16 18:40:55,215 - INFO - Extracting data for 1 matches...
+2025-10-16 18:40:56,798 - INFO - ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT']
+2025-10-16 18:40:56,798 - ERROR - Error when dealing with match EUW1_7566749902: dictionary update sequence element #0 has length 6; 2 is required
+2025-10-16 18:40:56,799 - INFO - Extraction finished: 0 matches successfully analyzed
+2025-10-16 18:40:56,799 - INFO - File saved : Datasets/picks_bans_20251016_184056.json.
+2025-10-16 18:40:56,799 - INFO - Dataset successfully saved: 0 matches
+2025-10-16 18:42:03,963 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:42:03,964 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:42:03,964 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:42:05,691 - INFO - Number of challenger players found : 300
+2025-10-16 18:42:05,692 - INFO - Getting matchs for 1 players...
+2025-10-16 18:42:07,247 - INFO - Total of unique matches found: 1
+2025-10-16 18:42:07,247 - INFO - Extracting data for 1 matches...
+2025-10-16 18:42:08,862 - INFO - {'BLUE_SIDE': {'TOP': 799, 'JUNGLE': 59, 'MIDDLE': 61, 'BOTTOM': 145, 'SUPPORT': 43}, 'RED_SIDE': {'TOP': 266, 'JUNGLE': 91, 'MIDDLE': 3, 'BOTTOM': 22, 'SUPPORT': 111}}
+2025-10-16 18:42:08,862 - INFO - ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT']
+2025-10-16 18:42:08,862 - ERROR - Error when dealing with match EUW1_7566749902: dictionary update sequence element #0 has length 6; 2 is required
+2025-10-16 18:42:08,863 - INFO - Extraction finished: 0 matches successfully analyzed
+2025-10-16 18:42:08,864 - INFO - File saved : Datasets/picks_bans_20251016_184208.json.
+2025-10-16 18:42:08,864 - INFO - Dataset successfully saved: 0 matches
+2025-10-16 18:42:35,501 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:42:35,502 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:42:35,502 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:42:37,299 - INFO - Number of challenger players found : 300
+2025-10-16 18:42:37,299 - INFO - Getting matchs for 1 players...
+2025-10-16 18:42:38,870 - INFO - Total of unique matches found: 1
+2025-10-16 18:42:38,870 - INFO - Extracting data for 1 matches...
+2025-10-16 18:42:40,453 - INFO - {'BLUE_SIDE': {'TOP': 799, 'JUNGLE': 59, 'MIDDLE': 61, 'BOTTOM': 145, 'SUPPORT': 43}, 'RED_SIDE': {'TOP': 266, 'JUNGLE': 91, 'MIDDLE': 3, 'BOTTOM': 22, 'SUPPORT': 111}}
+2025-10-16 18:42:40,453 - INFO - [('TOP', 799), ('JUNGLE', 59), ('MIDDLE', 61), ('BOTTOM', 145), ('SUPPORT', 43)]
+2025-10-16 18:42:40,453 - INFO - [('TOP', 266), ('JUNGLE', 91), ('MIDDLE', 3), ('BOTTOM', 22), ('SUPPORT', 111)]
+2025-10-16 18:42:40,454 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 18:42:40,454 - INFO - File saved : Datasets/picks_bans_20251016_184240.json.
+2025-10-16 18:42:40,455 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 18:54:21,247 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:54:21,247 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:54:21,247 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:54:23,157 - INFO - Number of challenger players found : 300
+2025-10-16 18:54:23,157 - INFO - Getting matchs for 1 players...
+2025-10-16 18:54:24,798 - INFO - Total of unique matches found: 1
+2025-10-16 18:54:24,798 - INFO - Extracting data for 1 matches...
+2025-10-16 18:54:26,373 - INFO - {'BOTTOM': 145, 'SUPPORT': 43, 'TOP': 799, 'MIDDLE': 61, 'JUNGLE': 59}
+2025-10-16 18:54:26,373 - INFO - {'BOTTOM': 22, 'SUPPORT': 111, 'MIDDLE': 3, 'JUNGLE': 91, 'TOP': 266}
+2025-10-16 18:54:26,374 - INFO - Shuffled picks for more variation
+2025-10-16 18:54:26,374 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 18:54:26,375 - INFO - File saved : Datasets/picks_bans_20251016_185426.json.
+2025-10-16 18:54:26,375 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 18:55:39,086 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:55:39,086 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:55:39,086 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:55:40,768 - INFO - Number of challenger players found : 300
+2025-10-16 18:55:40,768 - INFO - Getting matchs for 1 players...
+2025-10-16 18:55:42,356 - INFO - Total of unique matches found: 1
+2025-10-16 18:55:42,356 - INFO - Extracting data for 1 matches...
+2025-10-16 18:55:43,936 - INFO - [4, 1, 0, 3, 2]
+2025-10-16 18:55:43,936 - INFO - {'SUPPORT': 43, 'JUNGLE': 59, 'TOP': 799, 'BOTTOM': 145, 'MIDDLE': 61}
+2025-10-16 18:55:43,936 - INFO - [1, 0, 3, 2, 4]
+2025-10-16 18:55:43,936 - INFO - {'JUNGLE': 91, 'TOP': 266, 'BOTTOM': 22, 'MIDDLE': 3, 'SUPPORT': 111}
+2025-10-16 18:55:43,937 - INFO - Shuffled picks for more variation
+2025-10-16 18:55:43,937 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 18:55:43,938 - INFO - File saved : Datasets/picks_bans_20251016_185543.json.
+2025-10-16 18:55:43,938 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 18:59:17,349 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 18:59:17,349 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 18:59:17,350 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 18:59:19,056 - INFO - Number of challenger players found : 300
+2025-10-16 18:59:19,057 - INFO - Getting matchs for 1 players...
+2025-10-16 18:59:20,600 - INFO - Total of unique matches found: 1
+2025-10-16 18:59:20,600 - INFO - Extracting data for 1 matches...
+2025-10-16 18:59:22,177 - INFO - Shuffled picks for more variation
+2025-10-16 18:59:22,177 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 18:59:22,178 - INFO - File saved : Datasets/picks_bans_20251016_185922.json.
+2025-10-16 18:59:22,178 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:05:07,872 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:05:07,872 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:05:07,872 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:05:09,525 - INFO - Number of challenger players found : 300
+2025-10-16 19:05:09,525 - INFO - Getting matchs for 1 players...
+2025-10-16 19:05:11,076 - INFO - Total of unique matches found: 1
+2025-10-16 19:05:11,076 - INFO - Extracting data for 1 matches...
+2025-10-16 19:05:12,648 - INFO - Shuffled picks for more variation
+2025-10-16 19:05:12,648 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:05:12,649 - INFO - File saved : Datasets/picks_bans_20251016_190512.json.
+2025-10-16 19:05:12,649 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:11:02,936 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:11:02,936 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:11:02,937 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:11:04,576 - INFO - Number of challenger players found : 300
+2025-10-16 19:11:04,576 - INFO - Getting matchs for 1 players...
+2025-10-16 19:11:06,129 - INFO - Total of unique matches found: 1
+2025-10-16 19:11:06,130 - INFO - Extracting data for 1 matches...
+2025-10-16 19:11:07,677 - INFO - Shuffled picks for more variation
+2025-10-16 19:11:07,677 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:11:07,678 - INFO - File saved : Datasets/picks_bans_20251016_191107.json.
+2025-10-16 19:11:07,678 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:12:00,761 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:12:00,761 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:12:00,762 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:12:02,420 - INFO - Number of challenger players found : 300
+2025-10-16 19:12:02,420 - INFO - Getting matchs for 1 players...
+2025-10-16 19:12:03,915 - INFO - Total of unique matches found: 1
+2025-10-16 19:12:03,915 - INFO - Extracting data for 1 matches...
+2025-10-16 19:12:05,482 - INFO - Shuffled picks for more variation
+2025-10-16 19:12:05,483 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:12:05,484 - INFO - File saved : Datasets/picks_bans_20251016_191205.json.
+2025-10-16 19:12:05,484 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:12:34,193 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:12:34,193 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:12:34,193 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:12:35,795 - INFO - Number of challenger players found : 300
+2025-10-16 19:12:35,795 - INFO - Getting matchs for 1 players...
+2025-10-16 19:12:37,349 - INFO - Total of unique matches found: 1
+2025-10-16 19:12:37,349 - INFO - Extracting data for 1 matches...
+2025-10-16 19:12:38,947 - INFO - Shuffled picks for more variation
+2025-10-16 19:12:38,948 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:12:38,949 - INFO - File saved : Datasets/picks_bans_20251016_191238.json.
+2025-10-16 19:12:38,949 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:13:11,757 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:13:11,758 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:13:11,758 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:13:13,415 - INFO - Number of challenger players found : 300
+2025-10-16 19:13:13,415 - INFO - Getting matchs for 1 players...
+2025-10-16 19:13:14,912 - INFO - Total of unique matches found: 1
+2025-10-16 19:13:14,912 - INFO - Extracting data for 1 matches...
+2025-10-16 19:13:16,485 - INFO - Shuffled picks for more variation
+2025-10-16 19:13:16,486 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:13:16,487 - INFO - File saved : Datasets/picks_bans_20251016_191316.json.
+2025-10-16 19:13:16,487 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:17:36,684 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:17:36,684 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:17:36,684 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:17:38,396 - INFO - Number of challenger players found : 300
+2025-10-16 19:17:38,397 - INFO - Getting matchs for 1 players...
+2025-10-16 19:17:40,000 - INFO - Total of unique matches found: 1
+2025-10-16 19:17:40,000 - INFO - Extracting data for 1 matches...
+2025-10-16 19:17:41,547 - INFO - ['TOP', 'JUNGLE', 'MIDDLE', 'BOTTOM', 'SUPPORT']
+2025-10-16 19:17:41,547 - INFO - Shuffled picks for more variation
+2025-10-16 19:17:41,548 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:17:41,549 - INFO - File saved : Datasets/picks_bans_20251016_191741.json.
+2025-10-16 19:17:41,549 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:17:52,694 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:17:52,694 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:17:52,694 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:17:54,327 - INFO - Number of challenger players found : 300
+2025-10-16 19:17:54,327 - INFO - Getting matchs for 1 players...
+2025-10-16 19:17:55,849 - INFO - Total of unique matches found: 1
+2025-10-16 19:17:55,849 - INFO - Extracting data for 1 matches...
+2025-10-16 19:17:57,379 - INFO - [('TOP', 799), ('JUNGLE', 59), ('MIDDLE', 61), ('BOTTOM', 145), ('SUPPORT', 43)]
+2025-10-16 19:17:57,379 - INFO - Shuffled picks for more variation
+2025-10-16 19:17:57,380 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:17:57,381 - INFO - File saved : Datasets/picks_bans_20251016_191757.json.
+2025-10-16 19:17:57,381 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:19:32,075 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:19:32,075 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:19:32,075 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:19:33,751 - INFO - Number of challenger players found : 300
+2025-10-16 19:19:33,751 - INFO - Getting matchs for 1 players...
+2025-10-16 19:19:35,294 - INFO - Total of unique matches found: 1
+2025-10-16 19:19:35,294 - INFO - Extracting data for 1 matches...
+2025-10-16 19:19:36,825 - INFO - Shuffled picks for more variation
+2025-10-16 19:19:36,825 - INFO - dict_items([('MIDDLE', 61), ('JUNGLE', 59), ('SUPPORT', 43), ('TOP', 799), ('BOTTOM', 145)])
+2025-10-16 19:19:36,825 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:19:36,826 - INFO - File saved : Datasets/picks_bans_20251016_191936.json.
+2025-10-16 19:19:36,826 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:20:17,763 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:20:17,763 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:20:17,763 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:20:19,499 - INFO - Number of challenger players found : 300
+2025-10-16 19:20:19,499 - INFO - Getting matchs for 1 players...
+2025-10-16 19:20:20,996 - INFO - Total of unique matches found: 1
+2025-10-16 19:20:20,996 - INFO - Extracting data for 1 matches...
+2025-10-16 19:20:22,539 - INFO - Shuffled picks for more variation
+2025-10-16 19:20:22,539 - INFO - dict_values([799, 61, 59, 43, 145])
+2025-10-16 19:20:22,540 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:20:22,540 - INFO - File saved : Datasets/picks_bans_20251016_192022.json.
+2025-10-16 19:20:22,541 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:20:46,107 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:20:46,107 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:20:46,107 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:20:47,874 - INFO - Number of challenger players found : 300
+2025-10-16 19:20:47,874 - INFO - Getting matchs for 1 players...
+2025-10-16 19:20:49,412 - INFO - Total of unique matches found: 1
+2025-10-16 19:20:49,412 - INFO - Extracting data for 1 matches...
+2025-10-16 19:20:50,952 - INFO - Shuffled picks for more variation
+2025-10-16 19:20:50,953 - INFO - [43, 59, 61, 145, 799]
+2025-10-16 19:20:50,953 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:20:50,954 - INFO - File saved : Datasets/picks_bans_20251016_192050.json.
+2025-10-16 19:20:50,954 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:27:30,302 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:27:30,302 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:27:30,302 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:27:32,225 - INFO - Number of challenger players found : 300
+2025-10-16 19:27:32,225 - INFO - Getting matchs for 1 players...
+2025-10-16 19:27:33,785 - INFO - Total of unique matches found: 1
+2025-10-16 19:27:33,785 - INFO - Extracting data for 1 matches...
+2025-10-16 19:27:35,365 - ERROR - Error when dealing with match EUW1_7566749902: 'list' object has no attribute 'keys'
+2025-10-16 19:27:35,366 - INFO - Extraction finished: 0 matches successfully analyzed
+2025-10-16 19:27:35,367 - INFO - File saved : Datasets/picks_bans_20251016_192735.json.
+2025-10-16 19:27:35,367 - INFO - Dataset successfully saved: 0 matches
+2025-10-16 19:29:23,010 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:29:23,010 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:29:23,011 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:29:24,666 - INFO - Number of challenger players found : 300
+2025-10-16 19:29:24,667 - INFO - Getting matchs for 1 players...
+2025-10-16 19:29:26,249 - INFO - Total of unique matches found: 1
+2025-10-16 19:29:26,250 - INFO - Extracting data for 1 matches...
+2025-10-16 19:29:27,801 - INFO - Shuffled picks for more variation
+2025-10-16 19:29:27,802 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:29:27,802 - INFO - File saved : Datasets/picks_bans_20251016_192927.json.
+2025-10-16 19:29:27,803 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:29:48,065 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:29:48,066 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:29:48,066 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:29:49,787 - INFO - Number of challenger players found : 300
+2025-10-16 19:29:49,787 - INFO - Getting matchs for 1 players...
+2025-10-16 19:29:51,285 - INFO - Total of unique matches found: 1
+2025-10-16 19:29:51,285 - INFO - Extracting data for 1 matches...
+2025-10-16 19:29:52,852 - INFO - Shuffled picks for more variation
+2025-10-16 19:29:52,852 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:29:52,853 - INFO - File saved : Datasets/picks_bans_20251016_192952.json.
+2025-10-16 19:29:52,853 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:31:08,683 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:31:08,683 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:31:08,683 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:31:10,359 - INFO - Number of challenger players found : 300
+2025-10-16 19:31:10,360 - INFO - Getting matchs for 1 players...
+2025-10-16 19:31:11,912 - INFO - Total of unique matches found: 1
+2025-10-16 19:31:11,912 - INFO - Extracting data for 1 matches...
+2025-10-16 19:31:13,518 - INFO - {117: 1}
+2025-10-16 19:31:13,518 - INFO - {76: 2}
+2025-10-16 19:31:13,518 - INFO - {246: 3}
+2025-10-16 19:31:13,519 - INFO - {555: 4}
+2025-10-16 19:31:13,519 - INFO - {58: 5}
+2025-10-16 19:31:13,519 - INFO - {555: 1}
+2025-10-16 19:31:13,519 - INFO - {92: 2}
+2025-10-16 19:31:13,519 - INFO - {64: 3}
+2025-10-16 19:31:13,519 - INFO - {-1: 4}
+2025-10-16 19:31:13,519 - INFO - {-1: 5}
+2025-10-16 19:31:13,519 - INFO - Shuffled picks for more variation
+2025-10-16 19:31:13,520 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:31:13,520 - INFO - File saved : Datasets/picks_bans_20251016_193113.json.
+2025-10-16 19:31:13,521 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:31:30,729 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:31:30,729 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:31:30,729 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:31:32,321 - INFO - Number of challenger players found : 300
+2025-10-16 19:31:32,321 - INFO - Getting matchs for 1 players...
+2025-10-16 19:31:33,814 - INFO - Total of unique matches found: 1
+2025-10-16 19:31:33,814 - INFO - Extracting data for 1 matches...
+2025-10-16 19:31:35,363 - INFO - dict_keys([117])
+2025-10-16 19:31:35,363 - INFO - dict_keys([76])
+2025-10-16 19:31:35,363 - INFO - dict_keys([246])
+2025-10-16 19:31:35,364 - INFO - dict_keys([555])
+2025-10-16 19:31:35,364 - INFO - dict_keys([58])
+2025-10-16 19:31:35,364 - INFO - dict_keys([555])
+2025-10-16 19:31:35,364 - INFO - dict_keys([92])
+2025-10-16 19:31:35,364 - INFO - dict_keys([64])
+2025-10-16 19:31:35,364 - INFO - dict_keys([-1])
+2025-10-16 19:31:35,365 - INFO - dict_keys([-1])
+2025-10-16 19:31:35,365 - INFO - Shuffled picks for more variation
+2025-10-16 19:31:35,365 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:31:35,366 - INFO - File saved : Datasets/picks_bans_20251016_193135.json.
+2025-10-16 19:31:35,366 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:35:13,411 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:35:13,412 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:35:13,412 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:35:15,072 - INFO - Number of challenger players found : 300
+2025-10-16 19:35:15,072 - INFO - Getting matchs for 1 players...
+2025-10-16 19:35:16,681 - INFO - Total of unique matches found: 1
+2025-10-16 19:35:16,681 - INFO - Extracting data for 1 matches...
+2025-10-16 19:35:18,237 - INFO - 117
+2025-10-16 19:35:18,237 - INFO - 76
+2025-10-16 19:35:18,237 - INFO - 246
+2025-10-16 19:35:18,237 - INFO - 555
+2025-10-16 19:35:18,238 - INFO - 58
+2025-10-16 19:35:18,238 - INFO - 555
+2025-10-16 19:35:18,238 - INFO - 92
+2025-10-16 19:35:18,238 - INFO - 64
+2025-10-16 19:35:18,238 - INFO - -1
+2025-10-16 19:35:18,238 - INFO - -1
+2025-10-16 19:35:18,238 - INFO - Shuffled picks for more variation
+2025-10-16 19:35:18,239 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:35:18,239 - INFO - File saved : Datasets/picks_bans_20251016_193518.json.
+2025-10-16 19:35:18,240 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:35:48,914 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:35:48,914 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:35:48,915 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:35:50,639 - INFO - Number of challenger players found : 300
+2025-10-16 19:35:50,639 - INFO - Getting matchs for 1 players...
+2025-10-16 19:35:52,137 - INFO - Total of unique matches found: 1
+2025-10-16 19:35:52,137 - INFO - Extracting data for 1 matches...
+2025-10-16 19:35:53,685 - INFO - 117
+2025-10-16 19:35:53,685 - INFO - 76
+2025-10-16 19:35:53,685 - INFO - 246
+2025-10-16 19:35:53,685 - INFO - 555
+2025-10-16 19:35:53,685 - INFO - 58
+2025-10-16 19:35:53,686 - INFO - 555
+2025-10-16 19:35:53,686 - INFO - 92
+2025-10-16 19:35:53,686 - INFO - 64
+2025-10-16 19:35:53,686 - INFO - -1
+2025-10-16 19:35:53,686 - INFO - -1
+2025-10-16 19:35:53,686 - INFO - Shuffled picks for more variation
+2025-10-16 19:35:53,687 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:35:53,687 - INFO - File saved : Datasets/picks_bans_20251016_193553.json.
+2025-10-16 19:35:53,688 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:36:12,133 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:36:12,133 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:36:12,134 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:36:13,761 - INFO - Number of challenger players found : 300
+2025-10-16 19:36:13,762 - INFO - Getting matchs for 1 players...
+2025-10-16 19:36:15,260 - INFO - Total of unique matches found: 1
+2025-10-16 19:36:15,260 - INFO - Extracting data for 1 matches...
+2025-10-16 19:36:16,839 - INFO - Shuffled picks for more variation
+2025-10-16 19:36:16,840 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 19:36:16,840 - INFO - File saved : Datasets/picks_bans_20251016_193616.json.
+2025-10-16 19:36:16,841 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 19:40:54,851 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:40:54,851 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:40:54,852 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:40:56,521 - INFO - Number of challenger players found : 300
+2025-10-16 19:40:56,522 - INFO - Getting matchs for 1 players...
+2025-10-16 19:40:58,083 - INFO - Total of unique matches found: 15
+2025-10-16 19:40:58,083 - INFO - Extracting data for 15 matches...
+2025-10-16 19:40:59,646 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:01,207 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:02,748 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:04,296 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:05,868 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:07,419 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:08,976 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:10,540 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:12,099 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:13,657 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:15,223 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:16,792 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:18,336 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:19,890 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:21,524 - INFO - Shuffled picks for more variation
+2025-10-16 19:41:21,525 - INFO - Extraction finished: 15 matches successfully analyzed
+2025-10-16 19:41:21,525 - INFO - Games with at least one missing ban: 18, ie. -19.999999999999996% of games usable
+2025-10-16 19:41:21,527 - INFO - File saved : Datasets/picks_bans_20251016_194121.json.
+2025-10-16 19:41:21,527 - INFO - Dataset successfully saved: 15 matches
+2025-10-16 19:42:51,643 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:42:51,643 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:42:51,643 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:42:53,299 - INFO - Number of challenger players found : 300
+2025-10-16 19:42:53,299 - INFO - Getting matchs for 1 players...
+2025-10-16 19:42:54,824 - INFO - Total of unique matches found: 15
+2025-10-16 19:42:54,824 - INFO - Extracting data for 15 matches...
+2025-10-16 19:42:56,373 - INFO - Shuffled picks for more variation
+2025-10-16 19:42:57,986 - INFO - Shuffled picks for more variation
+2025-10-16 19:42:59,511 - INFO - Shuffled picks for more variation
+2025-10-16 19:43:01,115 - INFO - Shuffled picks for more variation
+2025-10-16 19:43:02,647 - INFO - Shuffled picks for more variation
+2025-10-16 19:43:04,197 - INFO - Shuffled picks for more variation
+2025-10-16 19:43:05,734 - INFO - Shuffled picks for more variation
+2025-10-16 19:43:07,268 - INFO - Shuffled picks for more variation
+2025-10-16 19:43:08,813 - INFO - Shuffled picks for more variation
+2025-10-16 19:43:10,368 - INFO - Shuffled picks for more variation
+2025-10-16 19:43:11,945 - INFO - Shuffled picks for more variation
+2025-10-16 19:43:13,575 - INFO - Shuffled picks for more variation
+2025-10-16 19:43:15,112 - INFO - Shuffled picks for more variation
+2025-10-16 19:43:16,672 - INFO - Shuffled picks for more variation
+2025-10-16 19:43:18,237 - INFO - Shuffled picks for more variation
+2025-10-16 19:43:18,238 - INFO - Extraction finished: 15 matches successfully analyzed
+2025-10-16 19:43:18,238 - INFO - Games with at least one missing ban: 18, ie. -19.999999999999996% of games usable
+2025-10-16 19:43:18,239 - INFO - File saved : Datasets/picks_bans_20251016_194318.json.
+2025-10-16 19:43:18,240 - INFO - Dataset successfully saved: 15 matches
+2025-10-16 19:44:03,689 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:44:03,690 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:44:03,690 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:44:05,363 - INFO - Number of challenger players found : 300
+2025-10-16 19:44:05,363 - INFO - Getting matchs for 1 players...
+2025-10-16 19:44:06,905 - INFO - Total of unique matches found: 15
+2025-10-16 19:44:06,905 - INFO - Extracting data for 15 matches...
+2025-10-16 19:44:08,489 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:10,028 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:11,569 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:13,107 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:14,635 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:16,192 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:17,737 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:19,303 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:20,867 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:22,404 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:23,976 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:25,513 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:27,066 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:28,610 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:30,227 - INFO - Shuffled picks for more variation
+2025-10-16 19:44:30,228 - INFO - Extraction finished: 15 matches successfully analyzed
+2025-10-16 19:44:30,228 - INFO - Games with at least one missing ban: 11, ie. 26.66666666666667% of games usable
+2025-10-16 19:44:30,229 - INFO - File saved : Datasets/picks_bans_20251016_194430.json.
+2025-10-16 19:44:30,230 - INFO - Dataset successfully saved: 15 matches
+2025-10-16 19:47:07,820 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:47:07,820 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:47:07,820 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:47:09,490 - INFO - Number of challenger players found : 300
+2025-10-16 19:47:09,490 - INFO - Getting matchs for 1 players...
+2025-10-16 19:47:11,049 - INFO - Total of unique matches found: 15
+2025-10-16 19:47:11,049 - INFO - Extracting data for 15 matches...
+2025-10-16 19:47:12,655 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:14,227 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:15,758 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:17,310 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:18,871 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:20,574 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:22,195 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:23,726 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:25,268 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:26,833 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:28,395 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:29,938 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:31,479 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:33,023 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:34,562 - INFO - Shuffled picks for more variation
+2025-10-16 19:47:34,563 - INFO - Extraction finished: 15 matches successfully analyzed
+2025-10-16 19:47:34,563 - CRITICAL - Fatal error: Unknown format code 'd' for object of type 'float'
+Traceback (most recent call last):
+  File "c:\Users\Maëlian\Documents\Maelian_Projects\bot_draft\dataset.py", line 189, in <module>
+    european_matches = europe_dataset.extract_match_data()
+  File "c:\Users\Maëlian\Documents\Maelian_Projects\bot_draft\dataset.py", line 174, in extract_match_data
+    logger.info(f"Games with at least one missing ban: {game_missing_ban_count}, ie. {(1-game_missing_ban_count/len(game_data))* 100:02d}% of games usable")
+                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: Unknown format code 'd' for object of type 'float'
+2025-10-16 19:49:05,672 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:49:05,672 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:49:05,673 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:49:07,331 - INFO - Number of challenger players found : 300
+2025-10-16 19:49:07,331 - INFO - Getting matchs for 1 players...
+2025-10-16 19:49:08,860 - INFO - Total of unique matches found: 15
+2025-10-16 19:49:08,860 - INFO - Extracting data for 15 matches...
+2025-10-16 19:49:10,428 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:11,971 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:13,515 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:15,060 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:16,606 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:18,136 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:19,687 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:21,261 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:22,822 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:24,361 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:25,908 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:27,479 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:29,045 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:30,573 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:32,149 - INFO - Shuffled picks for more variation
+2025-10-16 19:49:32,150 - INFO - Extraction finished: 15 matches successfully analyzed
+2025-10-16 19:49:32,150 - INFO - Games with at least one missing ban: 11, ie. 27.0% of games usable
+2025-10-16 19:49:32,152 - INFO - File saved : Datasets/picks_bans_20251016_194932.json.
+2025-10-16 19:49:32,152 - INFO - Dataset successfully saved: 15 matches
+2025-10-16 19:55:52,949 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 19:55:52,949 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 19:55:52,949 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 19:55:54,787 - INFO - Number of challenger players found : 300
+2025-10-16 19:55:54,787 - INFO - Getting matchs for 100 players...
+2025-10-16 19:58:24,445 - INFO - Total of unique matches found: 3286
+2025-10-16 19:58:24,445 - INFO - Extracting data for 3286 matches...
+2025-10-16 19:58:35,502 - INFO - Extraction finished: 6 matches successfully analyzed
+2025-10-16 19:58:35,502 - INFO - Games with at least one missing ban: 3, ie. 50.0% of games usable
+2025-10-16 19:58:35,503 - INFO - File saved : Datasets/picks_bans_20251016_195835.json.
+2025-10-16 19:58:35,504 - INFO - Dataset successfully saved: 6 matches
+2025-10-16 20:02:27,098 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 20:02:27,099 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 20:02:27,099 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 20:02:28,787 - INFO - Number of challenger players found : 300
+2025-10-16 20:02:28,788 - INFO - Getting matchs for 10 players...
+2025-10-16 20:02:44,062 - INFO - Total of unique matches found: 430
+2025-10-16 20:02:44,062 - INFO - Extracting data for 430 matches...
+2025-10-16 20:02:55,000 - INFO - Extraction finished: 6 matches successfully analyzed
+2025-10-16 20:02:55,000 - INFO - Games with at least one missing ban: 2, ie. 67.0% of games usable
+2025-10-16 20:02:55,001 - INFO - File saved : Datasets/picks_bans_20251016_200255.json.
+2025-10-16 20:02:55,001 - INFO - Dataset successfully saved: 6 matches
+2025-10-16 20:09:05,090 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 20:09:05,090 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 20:09:05,091 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 20:09:06,713 - INFO - Number of challenger players found : 300
+2025-10-16 20:09:06,713 - INFO - Getting matchs for 1 players...
+2025-10-16 20:09:08,262 - INFO - Total of unique matches found: 100
+2025-10-16 20:09:08,262 - INFO - Extracting data for 100 matches...
+2025-10-16 20:09:11,504 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-16 20:09:11,504 - INFO - Games with at least one missing ban: 0, ie. 100.0% of games usable
+2025-10-16 20:09:11,505 - INFO - File saved : Datasets/picks_bans_20251016_200911.json.
+2025-10-16 20:09:11,505 - INFO - Dataset successfully saved: 1 matches
+2025-10-16 20:10:57,981 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 20:10:57,982 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 20:10:57,982 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 20:10:59,653 - INFO - Number of challenger players found : 300
+2025-10-16 20:10:59,654 - INFO - Getting matchs for 1 players...
+2025-10-16 20:11:01,200 - INFO - Total of unique matches found: 100
+2025-10-16 20:11:01,200 - INFO - Extracting data for 100 matches...
+2025-10-16 20:11:02,885 - INFO - Extraction finished: 0 matches successfully analyzed
+2025-10-16 20:11:02,886 - CRITICAL - Fatal error: division by zero
+Traceback (most recent call last):
+  File "c:\Users\Maëlian\Documents\Maelian_Projects\bot_draft\dataset.py", line 189, in <module>
+    european_matches = europe_dataset.extract_match_data()
+  File "c:\Users\Maëlian\Documents\Maelian_Projects\bot_draft\dataset.py", line 174, in extract_match_data
+    logger.info(f"Games with at least one missing ban: {game_missing_ban_count}, ie. {round((1-game_missing_ban_count/len(game_data)),2)* 100}% of games usable")
+                                                                                               ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
+ZeroDivisionError: division by zero
+2025-10-16 20:11:35,674 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 20:11:35,674 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 20:11:35,674 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 20:11:37,322 - INFO - Number of challenger players found : 300
+2025-10-16 20:11:37,323 - INFO - Getting matchs for 1 players...
+2025-10-16 20:11:38,836 - INFO - Total of unique matches found: 10
+2025-10-16 20:11:38,836 - INFO - Extracting data for 10 matches...
+2025-10-16 20:11:54,512 - INFO - Extraction finished: 10 matches successfully analyzed
+2025-10-16 20:11:54,512 - INFO - Games with at least one missing ban: 7, ie. 30.0% of games usable
+2025-10-16 20:11:54,514 - INFO - File saved : Datasets/picks_bans_20251016_201154.json.
+2025-10-16 20:11:54,514 - INFO - Dataset successfully saved: 10 matches
+2025-10-16 20:12:04,856 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 20:12:04,857 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 20:12:04,857 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 20:12:06,467 - INFO - Number of challenger players found : 300
+2025-10-16 20:12:06,468 - INFO - Getting matchs for 1 players...
+2025-10-16 20:12:08,069 - INFO - Total of unique matches found: 20
+2025-10-16 20:12:08,070 - INFO - Extracting data for 20 matches...
+2025-10-16 20:12:23,837 - INFO - Extraction finished: 9 matches successfully analyzed
+2025-10-16 20:12:23,837 - INFO - Games with at least one missing ban: 6, ie. 33.0% of games usable
+2025-10-16 20:12:23,838 - INFO - File saved : Datasets/picks_bans_20251016_201223.json.
+2025-10-16 20:12:23,838 - INFO - Dataset successfully saved: 9 matches
+2025-10-16 20:15:05,229 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 20:15:05,229 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 20:15:05,229 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 20:15:06,869 - INFO - Number of challenger players found : 300
+2025-10-16 20:15:06,869 - INFO - Getting matchs for 1 players...
+2025-10-16 20:15:08,426 - INFO - Total of unique matches found: 20
+2025-10-16 20:15:08,426 - INFO - Extracting data for 20 matches...
+2025-10-16 20:15:40,118 - INFO - Extraction finished: 18 matches successfully analyzed
+2025-10-16 20:15:40,118 - INFO - Games with at least one missing ban: 14, ie. 22.0% of games usable
+2025-10-16 20:15:40,120 - INFO - File saved : Datasets/picks_bans_20251016_201540.json.
+2025-10-16 20:15:40,120 - INFO - Dataset successfully saved: 18 matches
+2025-10-16 20:17:39,891 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-16 20:17:39,891 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-16 20:17:39,891 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-16 20:17:41,766 - INFO - Number of challenger players found : 300
+2025-10-16 20:17:41,767 - INFO - Getting matchs for 100 players...
+2025-10-16 20:20:13,299 - INFO - Total of unique matches found: 3287
+2025-10-16 20:20:13,299 - INFO - Extracting data for 3287 matches...
+2025-10-16 21:55:02,159 - INFO - Extraction finished: 2493 matches successfully analyzed
+2025-10-16 21:55:02,159 - INFO - Games with at least one missing ban: 1483, ie. 41.0% of games usable
+2025-10-16 21:55:02,310 - INFO - File saved : Datasets/picks_bans_20251016_215502.json.
+2025-10-16 21:55:02,310 - INFO - Dataset successfully saved: 2493 matches
+2025-10-17 02:15:52,661 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 02:15:52,662 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 02:15:52,662 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-17 02:15:54,386 - INFO - Number of challenger players found : 300
+2025-10-17 02:15:54,387 - INFO - Getting matchs for 1 players...
+2025-10-17 02:15:55,954 - INFO - Total of unique matches found: 1
+2025-10-17 02:15:55,954 - INFO - Extracting data for 1 matches...
+2025-10-17 02:15:58,078 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-17 02:15:58,078 - INFO - Games with at least one missing ban: 1, ie. 0.0% of games usable
+2025-10-17 02:15:58,079 - INFO - File saved : Datasets/picks_bans_20251017_021558.json.
+2025-10-17 02:15:58,079 - INFO - Dataset successfully saved: 1 matches
+2025-10-17 02:17:49,232 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 02:17:49,233 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 02:17:49,233 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-17 02:17:50,897 - INFO - Number of challenger players found : 300
+2025-10-17 02:17:50,897 - INFO - Getting matchs for 1 players...
+2025-10-17 02:17:52,435 - INFO - Total of unique matches found: 1
+2025-10-17 02:17:52,435 - INFO - Extracting data for 1 matches...
+2025-10-17 02:17:54,504 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-17 02:17:54,504 - INFO - Games with at least one missing ban: 1, ie. 0.0% of games usable
+2025-10-17 02:17:54,505 - INFO - File saved : Datasets/picks_bans_20251017_021754.json.
+2025-10-17 02:17:54,505 - INFO - Dataset successfully saved: 1 matches
+2025-10-17 02:18:49,160 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 02:18:49,160 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 02:18:49,160 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-17 02:18:50,841 - INFO - Number of challenger players found : 300
+2025-10-17 02:18:50,841 - INFO - Getting matchs for 1 players...
+2025-10-17 02:18:52,349 - INFO - Total of unique matches found: 1
+2025-10-17 02:18:52,349 - INFO - Extracting data for 1 matches...
+2025-10-17 02:18:54,479 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-17 02:18:54,480 - INFO - Games with at least one missing ban: 1, ie. 0.0% of games usable
+2025-10-17 02:18:54,480 - INFO - File saved : Datasets/picks_bans_20251017_021854.json.
+2025-10-17 02:18:54,481 - INFO - Dataset successfully saved: 1 matches
+2025-10-17 02:22:03,596 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 02:22:03,597 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 02:22:03,597 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-17 02:22:05,235 - INFO - Number of challenger players found : 300
+2025-10-17 02:22:05,235 - INFO - Getting matchs for 1 players...
+2025-10-17 02:22:06,792 - INFO - Total of unique matches found: 1
+2025-10-17 02:22:06,792 - INFO - Extracting data for 1 matches...
+2025-10-17 02:22:08,892 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-17 02:22:08,892 - INFO - Games with at least one missing ban: 1, thus modified so it can be used
+2025-10-17 02:22:08,893 - INFO - File saved : Datasets/picks_bans_20251017_022208.json.
+2025-10-17 02:22:08,893 - INFO - Dataset successfully saved: 1 matches
+2025-10-17 02:25:05,840 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 02:25:05,840 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 02:25:05,840 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-17 02:25:07,510 - INFO - Number of challenger players found : 300
+2025-10-17 02:25:07,510 - INFO - Getting matchs for 1 players...
+2025-10-17 02:25:09,053 - INFO - Total of unique matches found: 1
+2025-10-17 02:25:09,053 - INFO - Extracting data for 1 matches...
+2025-10-17 02:25:11,229 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-17 02:25:11,229 - INFO - Games with at least one missing ban: 1, thus modified so it can be used
+2025-10-17 02:25:11,230 - INFO - File saved : Datasets/picks_bans_20251017_022511.json.
+2025-10-17 02:25:11,230 - INFO - Dataset successfully saved: 1 matches
+2025-10-17 02:42:16,903 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 02:42:16,903 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 02:42:16,903 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-17 02:42:18,553 - INFO - Number of challenger players found : 300
+2025-10-17 02:42:18,554 - INFO - Getting matches for 1 players...
+2025-10-17 02:42:20,115 - INFO - Total of unique matches found: 1
+2025-10-17 02:42:20,115 - INFO - Extracting data for 1 matches...
+2025-10-17 02:42:20,115 - CRITICAL - Fatal error: too many values to unpack (expected 2)
+Traceback (most recent call last):
+  File "c:\Users\Maëlian\Documents\Maelian_Projects\bot_draft\dataset.py", line 192, in <module>
+    european_matches = europe_dataset.extract_match_data()
+  File "c:\Users\Maëlian\Documents\Maelian_Projects\bot_draft\dataset.py", line 114, in extract_match_data
+    for idx, game_id in tqdm(list(match_ids), desc="Game count per player"):
+        ^^^^^^^^^^^^
+ValueError: too many values to unpack (expected 2)
+2025-10-17 02:43:01,765 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 02:43:01,765 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 02:43:01,765 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-17 02:43:03,426 - INFO - Number of challenger players found : 300
+2025-10-17 02:43:03,426 - INFO - Getting matches for 1 players...
+2025-10-17 02:43:04,921 - INFO - Total of unique matches found: 1
+2025-10-17 02:43:04,921 - INFO - Extracting data for 1 matches...
+2025-10-17 02:43:07,057 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-17 02:43:07,057 - INFO - Games with at least one missing ban: 1, thus modified so it can be used
+2025-10-17 02:43:07,058 - INFO - File saved : Datasets/europe_picks_bans_20251017_024307.json.
+2025-10-17 02:43:07,058 - INFO - Dataset successfully saved: 1 matches
+2025-10-17 02:43:37,911 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 02:43:37,911 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 02:43:37,911 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-17 02:43:39,595 - INFO - Number of challenger players found : 300
+2025-10-17 02:43:39,595 - INFO - Getting matches for 1 players...
+2025-10-17 02:43:41,167 - INFO - Total of unique matches found: 1
+2025-10-17 02:43:41,167 - INFO - Extracting data for 1 matches...
+2025-10-17 02:43:43,250 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-17 02:43:43,250 - INFO - Games with at least one missing ban: 1, thus modified so it can be used
+2025-10-17 02:43:43,251 - INFO - File saved : Datasets/europe_picks_bans_20251017_024343.json.
+2025-10-17 02:43:43,251 - INFO - Dataset successfully saved: 1 matches
+2025-10-17 02:47:58,821 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 02:47:58,821 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 02:47:58,821 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-17 02:48:00,498 - INFO - Number of challenger players found : 300
+2025-10-17 02:48:00,499 - INFO - Getting matches for 2 players...
+2025-10-17 02:48:03,554 - INFO - Total of unique matches found: 100
+2025-10-17 02:48:03,555 - INFO - Extracting data for 100 matches...
+2025-10-17 02:51:11,134 - INFO - Extraction finished: 59 matches successfully analyzed
+2025-10-17 02:51:11,135 - INFO - Games with at least one missing ban: 38, thus modified so it can be used
+2025-10-17 02:52:30,074 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 02:52:30,074 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 02:52:30,074 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-17 02:52:31,786 - INFO - Number of challenger players found : 300
+2025-10-17 02:52:31,786 - INFO - Getting matches for 2 players...
+2025-10-17 02:52:34,826 - INFO - Total of unique matches found: 100
+2025-10-17 02:52:34,826 - INFO - Extracting data for 100 matches...
+2025-10-17 02:55:42,333 - INFO - Extraction finished: 59 matches successfully analyzed
+2025-10-17 02:55:42,334 - INFO - Games with at least one missing ban: 38, thus modified so it can be used
+2025-10-17 03:01:31,417 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 03:01:31,417 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 03:01:31,417 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-17 03:01:33,030 - INFO - Number of challenger players found : 300
+2025-10-17 03:01:33,031 - INFO - Getting matches for 2 players...
+2025-10-17 03:01:36,118 - INFO - Total of unique matches found: 100 without filtering queue
+2025-10-17 03:01:36,118 - INFO - Extracting data for 100 matches...
+2025-10-17 03:05:25,246 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 03:05:25,246 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 03:05:25,246 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-17 03:05:26,883 - INFO - Number of challenger players found : 300
+2025-10-17 03:05:26,883 - INFO - Getting matches for 2 players...
+2025-10-17 03:05:29,929 - INFO - Total of unique matches found: 100 without filtering queue
+2025-10-17 03:05:29,929 - INFO - Extracting data for 100 matches...
+2025-10-17 03:08:11,094 - INFO - Saving file after 50 iterations...
+2025-10-17 03:08:37,792 - INFO - Saving file after 100 iterations...
+2025-10-17 03:08:37,792 - INFO - Extraction finished: 59 matches successfully analyzed
+2025-10-17 03:08:37,792 - INFO - Games with at least one missing ban: 38, thus modified so it can be used
+2025-10-17 03:09:41,004 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 03:09:41,004 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 03:09:41,004 - INFO - Getting the challenger player list: https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5
+2025-10-17 03:09:42,732 - INFO - Number of challenger players found : 300
+2025-10-17 03:09:42,733 - INFO - Getting matches for 1 players...
+2025-10-17 03:09:44,282 - INFO - Total of unique matches found: 1 without filtering queue
+2025-10-17 03:09:44,282 - INFO - Extracting data for 1 matches...
+2025-10-17 03:09:46,382 - INFO - Saving file after 1 iterations...
+2025-10-17 03:09:46,382 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-17 03:09:46,382 - INFO - Games with at least one missing ban: 1, thus modified so it can be used
+2025-10-17 03:12:34,329 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 03:12:34,329 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 03:12:34,329 - INFO - Getting the challenger player list...
+2025-10-17 03:12:34,329 - INFO - Requesting data from https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5...
+2025-10-17 03:12:35,982 - INFO - Number of challenger players found : 300
+2025-10-17 03:12:35,983 - INFO - Getting matches for 1 players...
+2025-10-17 03:12:35,991 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/QIXLJlX5qsY6jlWoRJjVpIE0q2ZXzCMRmq1gERl3TNDchThKEx_TsJR6hXP06AWjTldWqnQj9LtsmQ/ids?count=1...
+2025-10-17 03:12:37,518 - INFO - Total of unique matches found: 1 without filtering queue
+2025-10-17 03:12:37,518 - INFO - Extracting data for 1 matches...
+2025-10-17 03:12:37,519 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/EUW1_7566749902...
+2025-10-17 03:12:39,630 - INFO - Saving file after 1 iterations...
+2025-10-17 03:12:39,630 - INFO - Extraction finished: 1 matches successfully analyzed
+2025-10-17 03:12:39,630 - INFO - Games with at least one missing ban: 1, thus modified so it can be used
+2025-10-17 03:19:40,487 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 03:19:40,488 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 03:19:40,488 - INFO - Getting the challenger player list...
+2025-10-17 03:19:40,488 - INFO - Requesting data from https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5...
+2025-10-17 03:19:42,149 - INFO - Number of challenger players found : 300
+2025-10-17 03:19:42,150 - INFO - Getting matches for 100 players...
+2025-10-17 03:19:42,159 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/QIXLJlX5qsY6jlWoRJjVpIE0q2ZXzCMRmq1gERl3TNDchThKEx_TsJR6hXP06AWjTldWqnQj9LtsmQ/ids?count=200...
+2025-10-17 03:19:42,504 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:42,505 - WARNING - No match found for player QIXLJlX5...
+2025-10-17 03:19:42,505 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/4lHf5vvGK43GnyS2BfulWGWPWdd_p3Al1KJivrcg8lNIwKWSoW3FUJZKUAqZN7559wwoYCemmrA0Zw/ids?count=200...
+2025-10-17 03:19:42,789 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:42,790 - WARNING - No match found for player 4lHf5vvG...
+2025-10-17 03:19:42,790 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/pHkAb2YvkkagDZWuQ3aCUSOZTneiZMSDE7spqWl77fobGONTL4nrEkFDXzMS4Y44zGllIf0nFg7kuw/ids?count=200...
+2025-10-17 03:19:43,070 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:43,071 - WARNING - No match found for player pHkAb2Yv...
+2025-10-17 03:19:43,071 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/XUn7XhaAAJ_3H-h7aBwmo8B7s92ld1rv_JFK24Wi55JnNlJFp0YP_AKEGKlW6FugrvMCHZShjKP-6g/ids?count=200...
+2025-10-17 03:19:43,357 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:43,358 - WARNING - No match found for player XUn7XhaA...
+2025-10-17 03:19:43,358 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/TNxVSUMwCsCzcYraYzAMPq8bLEhM2acfZUwq0MM5sdhghMYpEA2Ex867jkqcaG0pkC1-KRZXNgDRhA/ids?count=200...
+2025-10-17 03:19:43,649 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:43,649 - WARNING - No match found for player TNxVSUMw...
+2025-10-17 03:19:43,650 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/LqqJh5KHuc-nQq9GqxA6XOrSOJZzmllH9gGbk3miHrGsXKLsENmewSNOD3T1GIGlFwhpYbBXlmybJg/ids?count=200...
+2025-10-17 03:19:43,933 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:43,934 - WARNING - No match found for player LqqJh5KH...
+2025-10-17 03:19:43,934 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/BiqcquWsmoKW3pvwk6FzSU6y5LVRyUwpnZxTyD_zCnPyc6HxVZRRvOLIT2L-Cy1K2piP7RGKlwuB_g/ids?count=200...
+2025-10-17 03:19:44,220 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:44,221 - WARNING - No match found for player BiqcquWs...
+2025-10-17 03:19:44,221 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/arGgrUtAWupCuZ62I4easQaziAI5r-jSs0kQko9MR1TMD1UGt9_Hd-mVAvqNqukK9lTzhocquMsSVQ/ids?count=200...
+2025-10-17 03:19:44,508 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:44,509 - WARNING - No match found for player arGgrUtA...
+2025-10-17 03:19:44,509 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/rzPavAVIrTy_aLwO-djABRI7og9HWYnNWxWsh05lMXDqLlJK9bRB1a-qb_UP4r6LZI1_3BU_INljBg/ids?count=200...
+2025-10-17 03:19:44,803 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:44,804 - WARNING - No match found for player rzPavAVI...
+2025-10-17 03:19:44,804 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/bKzWbUfiBIPFgryhJ2g0aCEDDHNVGLeUxdrV1UUcFw7WTewvub5CJJAN9R6cx3q9nYJHVLT3oOBVbQ/ids?count=200...
+2025-10-17 03:19:45,086 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:45,087 - WARNING - No match found for player bKzWbUfi...
+2025-10-17 03:19:45,087 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/IAVnBFMlZ916dQojIUlrXatKRFN_XOaPX9rHpdSjT2sTtMV89Glkr7u1UW7PB4WZ2-dmVdvU3Cp9UQ/ids?count=200...
+2025-10-17 03:19:45,370 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:45,371 - WARNING - No match found for player IAVnBFMl...
+2025-10-17 03:19:45,371 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/BT_PYbfnR3osoki9GU_LcFv8HsqUKRMhjINUMA71e6mNITJJG9nWcugoeo_dg8I7jSdDZNk8JsH-dw/ids?count=200...
+2025-10-17 03:19:45,653 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:45,654 - WARNING - No match found for player BT_PYbfn...
+2025-10-17 03:19:45,655 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/uYMVgytjpuFMmc2Ee22Z567NXgxtpvhcV-W-0G6pIzH35uggpYJ_IiTWn_rcSMC9u68IekozhBoUXQ/ids?count=200...
+2025-10-17 03:19:45,944 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:45,945 - WARNING - No match found for player uYMVgytj...
+2025-10-17 03:19:45,946 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/fphVnxmToVmMOPghhQeWbSvXWUL8ANU1c51Ftctp_f6HcyRm4QeWNC72rJu0ULKlJ59_llb9gt8yEg/ids?count=200...
+2025-10-17 03:19:46,227 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:46,228 - WARNING - No match found for player fphVnxmT...
+2025-10-17 03:19:46,228 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/s0s9rTS9yjJ3PK__Kbr1FJSF0KJ0zSpdEOgsslJOEcHek11f9N4IlCbOX6Pj9DsVUrG4Mxj_bcN7qg/ids?count=200...
+2025-10-17 03:19:46,519 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:46,520 - WARNING - No match found for player s0s9rTS9...
+2025-10-17 03:19:46,520 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/g0i_XdgmZjHQq7JjwSWmdrm2U5U0TsDPh5Vj4fQtfVbO02vwE4CfmqjPANd7fIDcEXUNBzdaOZpAvg/ids?count=200...
+2025-10-17 03:19:46,811 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:46,811 - WARNING - No match found for player g0i_Xdgm...
+2025-10-17 03:19:46,812 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/UgqZLhUNf0rrQXOoGzWK2q2BSTtX8OLf0A3iLEiXaubN974EbP_fCHI_4JjD6-Q2wknPpM-wAujJ9w/ids?count=200...
+2025-10-17 03:19:47,102 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:47,103 - WARNING - No match found for player UgqZLhUN...
+2025-10-17 03:19:47,103 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/GMoTEhyRAEINAum9w49FngO1Xc81J4rMjgSpggSDr26PKN8aJcg0u7Rgs4xPrWk33HmrLSsNUOzBCg/ids?count=200...
+2025-10-17 03:19:47,406 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:47,407 - WARNING - No match found for player GMoTEhyR...
+2025-10-17 03:19:47,407 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/4QwsLgs5z0PRpSzgh9UXLC1GVrXFrW77ASlpOZLqhv15vHFAj899OHCk5JiJVrQerDVYfvNIGPhCgA/ids?count=200...
+2025-10-17 03:19:47,690 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:47,691 - WARNING - No match found for player 4QwsLgs5...
+2025-10-17 03:19:47,691 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/UXE81DaL8K7Ix1zi6Y3Y0uzZQcIBo2C6fl3MJvx6bPxNMxKOf0SpUC-mCTeM8iS0L8NfkxAt9OtMsw/ids?count=200...
+2025-10-17 03:19:47,965 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:47,966 - WARNING - No match found for player UXE81DaL...
+2025-10-17 03:19:47,966 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/Qvb9Ynwft5I9VJhoSIS88fjwa_dvnB14k6AbffirJXayofzOUEOdoOyfmKrJHXlY8QE62FWVkTbz9Q/ids?count=200...
+2025-10-17 03:19:48,247 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:48,248 - WARNING - No match found for player Qvb9Ynwf...
+2025-10-17 03:19:48,248 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/GoGJ0ztyhl7Ld58JDMl5rFL5hpJ69GpWromRUlhW_OV3ARxGXkUOUJqn6WLIf55vO_biOh8ACyEgww/ids?count=200...
+2025-10-17 03:19:48,541 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:48,542 - WARNING - No match found for player GoGJ0zty...
+2025-10-17 03:19:48,542 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/yz26mJspAff-A4uXtfnyD9FWEae5iBwaiT8vTqBUGyMzLKn1a5p6vXX95G8CZ1E_21iEDvnC1_GWLg/ids?count=200...
+2025-10-17 03:19:48,828 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:48,829 - WARNING - No match found for player yz26mJsp...
+2025-10-17 03:19:48,829 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/BQFq1aNC2tORrrtXTgj0V-2Sq1cIgf2P4eqxDi6WmTea4MISNvH7DjOv2GpQBJAGk7nVcExMgMTJzA/ids?count=200...
+2025-10-17 03:19:49,100 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:49,101 - WARNING - No match found for player BQFq1aNC...
+2025-10-17 03:19:49,102 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/2hSGbMiKCHp28_s6VYu0BfHV63cw8gJ1SMmq1FJATashViqrjoZA9a3mS5cumkCNC2p8Q-736XmQFg/ids?count=200...
+2025-10-17 03:19:49,391 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:49,392 - WARNING - No match found for player 2hSGbMiK...
+2025-10-17 03:19:49,393 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/244dFmpczXYVvvSv19zVJO82r7N4XBG-LW7BJ_yOxYCQ91HXifZRCMgvPoKqJ295sG75g0qGi83psw/ids?count=200...
+2025-10-17 03:19:49,671 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:49,672 - WARNING - No match found for player 244dFmpc...
+2025-10-17 03:19:49,672 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/lMIKmOIryxAQxPFpChIc2UVZxFWPCp14dkQvCgBBKjq8ML1PzIZ0oiiAgwMnX9TFiI5LitN7WMRqTw/ids?count=200...
+2025-10-17 03:19:49,951 - ERROR - Error 400 : {"status":{"message":"Bad Request - invalid parameter value 200, must be between 0 and 100","status_code":400}}
+2025-10-17 03:19:49,952 - WARNING - No match found for player lMIKmOIr...
+2025-10-17 03:19:49,952 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/Gu4GEYD6Aoy97OQJub4gvtzvpcY3zXwPmlj0jPvVzHSPFoWVjlzF2kCPGiDcfefX4hwH2CLRr68UGw/ids?count=200...
+2025-10-17 03:19:55,071 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 03:19:55,071 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 03:19:55,071 - INFO - Getting the challenger player list...
+2025-10-17 03:19:55,071 - INFO - Requesting data from https://euw1.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5...
+2025-10-17 03:19:56,745 - INFO - Number of challenger players found : 300
+2025-10-17 03:19:56,745 - INFO - Getting matches for 100 players...
+2025-10-17 03:19:56,754 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/QIXLJlX5qsY6jlWoRJjVpIE0q2ZXzCMRmq1gERl3TNDchThKEx_TsJR6hXP06AWjTldWqnQj9LtsmQ/ids?count=100...
+2025-10-17 03:19:58,247 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/4lHf5vvGK43GnyS2BfulWGWPWdd_p3Al1KJivrcg8lNIwKWSoW3FUJZKUAqZN7559wwoYCemmrA0Zw/ids?count=100...
+2025-10-17 03:19:59,744 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/pHkAb2YvkkagDZWuQ3aCUSOZTneiZMSDE7spqWl77fobGONTL4nrEkFDXzMS4Y44zGllIf0nFg7kuw/ids?count=100...
+2025-10-17 03:20:01,240 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/XUn7XhaAAJ_3H-h7aBwmo8B7s92ld1rv_JFK24Wi55JnNlJFp0YP_AKEGKlW6FugrvMCHZShjKP-6g/ids?count=100...
+2025-10-17 03:20:02,737 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/TNxVSUMwCsCzcYraYzAMPq8bLEhM2acfZUwq0MM5sdhghMYpEA2Ex867jkqcaG0pkC1-KRZXNgDRhA/ids?count=100...
+2025-10-17 03:20:04,244 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/LqqJh5KHuc-nQq9GqxA6XOrSOJZzmllH9gGbk3miHrGsXKLsENmewSNOD3T1GIGlFwhpYbBXlmybJg/ids?count=100...
+2025-10-17 03:20:05,742 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/BiqcquWsmoKW3pvwk6FzSU6y5LVRyUwpnZxTyD_zCnPyc6HxVZRRvOLIT2L-Cy1K2piP7RGKlwuB_g/ids?count=100...
+2025-10-17 03:20:07,238 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/arGgrUtAWupCuZ62I4easQaziAI5r-jSs0kQko9MR1TMD1UGt9_Hd-mVAvqNqukK9lTzhocquMsSVQ/ids?count=100...
+2025-10-17 03:20:08,732 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/rzPavAVIrTy_aLwO-djABRI7og9HWYnNWxWsh05lMXDqLlJK9bRB1a-qb_UP4r6LZI1_3BU_INljBg/ids?count=100...
+2025-10-17 03:20:10,230 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/bKzWbUfiBIPFgryhJ2g0aCEDDHNVGLeUxdrV1UUcFw7WTewvub5CJJAN9R6cx3q9nYJHVLT3oOBVbQ/ids?count=100...
+2025-10-17 03:20:11,726 - INFO - Requesting data from https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/IAVnBFMlZ916dQojIUlrXatKRFN_XOaPX9rHpdSjT2sTtMV89Glkr7u1UW7PB4WZ2-dmVdvU3Cp9UQ/ids?count=100...
+2025-10-17 03:20:46,249 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 03:20:46,250 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 03:20:46,250 - INFO - Getting the challenger player list...
+2025-10-17 03:20:47,914 - INFO - Number of challenger players found : 300
+2025-10-17 03:20:47,914 - INFO - Getting matches for 100 players...
+2025-10-17 03:23:17,660 - INFO - Total of unique matches found: 6358 without filtering queue
+2025-10-17 03:23:17,660 - INFO - Extracting data for 6358 matches...
+2025-10-17 03:26:49,573 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 03:26:49,574 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 03:26:49,574 - INFO - Getting the master player list...
+2025-10-17 03:26:54,241 - INFO - Number of challenger players found : 10000
+2025-10-17 03:26:54,242 - INFO - Getting matches for 150 players...
+2025-10-17 03:50:42,574 - INFO - Dataset created for EUROPE - Queue RANKED_SOLO_5x5
+2025-10-17 03:50:42,574 - INFO - Host: euw1.api.riotgames.com | Match host: europe.api.riotgames.com
+2025-10-17 03:50:42,575 - INFO - Getting the grandmaster player list...
+2025-10-17 03:50:44,575 - INFO - Number of grandmaster players found : 700
+2025-10-17 03:50:44,575 - INFO - Getting matches for 150 players...
