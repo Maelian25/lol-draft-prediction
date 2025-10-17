@@ -264,32 +264,32 @@ python train_model.py --data Datasets/latest.json --model xgboost
 The standard draft order follows this pattern:
 
 **Bans Phase 1** (6 bans):
-1. Blue ban
-2. Red ban
-3. Blue ban
-4. Red ban
-5. Blue ban
-6. Red ban
+1. Blue ban (1)
+2. Red ban (2)
+3. Blue ban (3)
+4. Red ban (4)
+5. Blue ban (5)
+6. Red ban (6)
 
 **Picks Phase 1** (6 picks):
-1. Blue pick
-2. Red pick
-3. Red pick
-4. Blue pick
-5. Blue pick
-6. Red pick
+1. Blue pick (1)
+2. Red pick (2)
+3. Red pick (3)
+4. Blue pick (4)
+5. Blue pick (5)
+6. Red pick (6)
 
 **Bans Phase 2** (4 bans):
-7. Red ban
-8. Blue ban
-9. Red ban
-10. Blue ban
+1. Red ban (7)
+2. Blue ban (8)
+3. Red ban (9)
+4. Blue ban (10)
 
 **Picks Phase 2** (4 picks):
-7. Red pick
-8. Blue pick
-9. Blue pick
-10. Red pick
+1. Red pick (7)
+2. Blue pick (8)
+3. Blue pick (9)
+4. Red pick (10)
 
 ---
 
