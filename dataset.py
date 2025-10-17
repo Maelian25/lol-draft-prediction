@@ -1,8 +1,10 @@
 from helper import convert_unix_timestamp_to_date, replace_missed_bans, riot_request, save_json_to_dir, shuffle_picks_order_with_weights
 from tqdm import tqdm
 import logging
+import os
 
 # Logger config
+os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
