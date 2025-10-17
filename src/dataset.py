@@ -99,8 +99,10 @@ class Dataset:
         logger.info(f"Getting matches for {len(players)} players...")
 
         for player_puuid in tqdm(players, desc="Player count"):
-            request_url = f"""https://{self.match_host}{self.matches_url}{player_puuid}
-                            /ids?count={self.game_count}"""
+            request_url = (
+                f"https://{self.match_host}{self.matches_url}{player_puuid}"
+                f"/ids?count={self.game_count}"
+            )
             data = riot_request(url=request_url, headers=self.headers)
 
             if data and isinstance(data, list):
@@ -109,8 +111,10 @@ class Dataset:
                 logger.warning(f"No match found for player {player_puuid[:8]}...")
 
         logger.info(
-            f"""Total of unique matches found: {len(match_ids)} without
-             filtering queue"""
+            (
+                f"Total of unique matches found: {len(match_ids)}"
+                ", whithout filtering queue"
+            )
         )
         return match_ids
 
@@ -166,10 +170,11 @@ class Dataset:
                                 for order, champ in enumerate(team.get("bans", []))
                             ]
                         )
-
-                    for b in bans:
-                        if b["championId"] == -1:
-                            missing_ban = True
+                for b in bans:
+                    if b["championId"] == -1:
+                        missing_ban = True
+                        continue
+                if missing_ban:
                     replace_missed_bans(bans)
 
                 if missing_ban:
@@ -224,8 +229,8 @@ class Dataset:
             f"Extraction finished: {len(game_data)} matches successfully analyzed"
         )
         logger.info(
-            f"""Games with at least one missing ban: {game_missing_ban_count}
-            , thus modified so it can be used"""
+            f"Games with at least one missing ban: {game_missing_ban_count}"
+            ", thus modified so it can be used"
         )
         return game_data
 

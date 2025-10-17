@@ -124,8 +124,10 @@ def shuffle_picks_order_with_weights(picks, weights=[0.5, 0.7, 0.6, 0.2, 0.2]):
 # Function to take a random champ and replace de -1 in bans
 # so that we dont lose too many games for no real reason
 def replace_missed_bans(bans):
-    champions_file_url = f"""https://ddragon.leagueoflegends.com/cdn/{DDRAGONVERSION}
-    /data/en_US/champion.json"""
+    champions_file_url = (
+        f"https://ddragon.leagueoflegends.com/cdn/"
+        f"{DDRAGONVERSION}/data/en_US/champion.json"
+    )
     data = requests.get(champions_file_url).json()
     champion_data = data["data"]
 
