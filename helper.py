@@ -53,14 +53,43 @@ def convert_unix_timestamp_to_date(ts):
     
     return str(datetime.fromtimestamp(timestamp))
 
-def shuffle_picks_order_with_weights(picks, weights = [0.5,0.6,0.6,0.3,0.3]):
-    for team in list(picks):
-        picks_list = list(picks[team].items())
-        order = sorted(range(len(picks_list)), key=lambda i: random.random() ** (weights[i]))
-        shuffle_weighted = dict([picks_list[i] for i in order])
-        picks[team] = shuffle_weighted
+def shuffle_picks_order_with_weights(picks, weights = [0.5,0.7,0.6,0.2,0.2]):
+    blue_side_picks = []
+    red_side_picks = []
     
-    return(picks)
+    # Create teams from each side
+    for p in picks:
+        entry = {"order": p["order"], "position": p["position"]}
+        
+        blue_side_picks.append(entry) if p["side"] == "blue" else red_side_picks.append(entry)
+    
+    # Internal functions to shuffle sides
+    def shuffle_side(side_picks):
+        n = len(side_picks)
+        
+        shuffled_indices = sorted(range(n), key=lambda i: random.random() ** (weights[i]))
+        
+        new_side_picks = [{"order": new_order + 1, "position": side_picks[position]["position"]} for new_order,position in enumerate(shuffled_indices)]
+        
+        return new_side_picks
+    
+    new_blue_side_picks = shuffle_side(blue_side_picks)
+    new_red_side_picks = shuffle_side(red_side_picks)
+    
+    new_blue_side = []
+    new_red_side = []
+    new_picks = []
+    for p in picks:
+        for obj in new_blue_side_picks:
+            if obj["position"] == p["position"] and p["side"] == "blue":
+                new_blue_side.append({"side" : p["side"], "championId" : p["championId"],"position" : p["position"], "order" : obj["order"]})
+                new_blue_side.sort(key=lambda x: x["order"])
+        for obj in new_red_side_picks:
+            if obj["position"] == p["position"] and p["side"] == "red":
+                new_red_side.append({"side" : p["side"], "championId" : p["championId"],"position" : p["position"], "order" : obj["order"]})
+                new_red_side.sort(key=lambda x: x["order"])
+    
+    return(new_blue_side + new_red_side)
 
 # Function to take a random champ and replace de -1 in bans so that we dont lose too many games for no real reason
 def replace_missed_bans(bans):

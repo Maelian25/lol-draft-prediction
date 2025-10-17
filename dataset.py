@@ -7,7 +7,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('riot_dataset.log'),
+        logging.FileHandler('logs/data_scrapping.log'),
         logging.StreamHandler()
     ]
 )
@@ -131,15 +131,15 @@ class Dataset():
                     idx -= 1
                     continue
                 
-                picks = {}
-                bans = {}
+                picks = []
+                bans = []
                 missing_ban = False
                 
                 # Extracting bans
                 for team in teams:
                     team_id = "blue" if team.get("teamId") == 100 else "red"
                     if team_id:
-                        bans= [{"side" : team_id, "championId" : champ["championId"], "order" : order + 1} for order, champ in enumerate(team.get("bans", []))]
+                        bans.extend([{"side" : team_id, "championId" : champ["championId"], "order" : order + 1} for order, champ in enumerate(team.get("bans", []))])
                 
                     for b in bans:
                         if b["championId"] == -1 :
@@ -150,16 +150,14 @@ class Dataset():
                     game_missing_ban_count +=1            
                 
                 # Extracting picks
-                for p in participants:
+                for order,p in enumerate(participants):
                     team_id = "blue" if p.get("teamId") == 100 else "red"
                     position = p.get("teamPosition") if p.get("teamPosition") != "UTILITY" else "SUPPORT"
                     champ = p.get("championId")
                     
-                    if team_id and champ:
-                        if team_id not in picks:
-                            picks[team_id] = {}
-                    picks[team_id][position] = champ
-    
+                    picks.append({"side" : team_id, "championId" : champ,"position" : position, "order" : order + 1 if team_id == 'blue' else order - 4})
+                    
+                
                 game_data.append({
                     "match_id": game_id,
                     "game_version": game_info.get("gameVersion", "")[:5],
@@ -190,8 +188,8 @@ if __name__ == "__main__":
         europe__chall_dataset = Dataset(
             region="EUROPE",
             queue="RANKED_SOLO_5x5",
-            game_count=80,
-            player_count=250,
+            game_count=1,
+            player_count=1,
             elo="challenger"
         )
 
