@@ -26,6 +26,7 @@ if __name__ == "__main__":
     API_KEY = os.getenv("RIOT_API_KEY")
     HEADERS = {"X-Riot-Token": API_KEY}
     SAVE_AFTER_ITERATION = 1000
+
     try:
         # Checking to see if the scrapping is already done
         save_path = os.path.join(os.getcwd(), "datasets")
@@ -33,7 +34,7 @@ if __name__ == "__main__":
 
         if not data_scrapped:
             # Creating dataset
-            europe__chall_dataset = Dataset(
+            europe_chall_dataset = Dataset(
                 region="EUROPE",
                 queue="RANKED_SOLO_5x5",
                 game_count=60,
@@ -42,7 +43,7 @@ if __name__ == "__main__":
             )
 
             # Extracting data
-            european_chall_matches = europe__chall_dataset.extract_match_data()
+            european_chall_matches = europe_chall_dataset.extract_match_data()
 
     except Exception as e:
         logger.critical(f"Fatal error: {e}", exc_info=True)
