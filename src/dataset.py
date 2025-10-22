@@ -1,5 +1,6 @@
 from helper import (
     convert_unix_timestamp_to_date,
+    load_scrapped_data,
     replace_missed_bans,
     riot_request,
     save_json_to_dir,
@@ -237,17 +238,22 @@ class Dataset:
 
 if __name__ == "__main__":
     try:
-        # Creating dataset
-        europe__chall_dataset = Dataset(
-            region="EUROPE",
-            queue="RANKED_SOLO_5x5",
-            game_count=60,
-            player_count=250,
-            elo="challenger",
-        )
+        # Checking to see if the scrapping is already done
+        save_path = os.path.join(os.getcwd(), "datasets")
+        df_matches, data_scrapped = load_scrapped_data(save_path)
 
-        # Extracting data
-        european_chall_matches = europe__chall_dataset.extract_match_data()
+        if not data_scrapped:
+            # Creating dataset
+            europe__chall_dataset = Dataset(
+                region="EUROPE",
+                queue="RANKED_SOLO_5x5",
+                game_count=60,
+                player_count=250,
+                elo="challenger",
+            )
+
+            # Extracting data
+            european_chall_matches = europe__chall_dataset.extract_match_data()
 
     except Exception as e:
         logger.critical(f"Fatal error: {e}", exc_info=True)

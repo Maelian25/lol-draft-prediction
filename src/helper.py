@@ -5,6 +5,7 @@ import time
 import logging
 from datetime import datetime
 import random
+import pandas as pd
 
 # 100 requests are allowed every 2 minutes, and 20 requests per seconds
 TIME_LIMIT = 120
@@ -150,3 +151,43 @@ def replace_missed_bans(bans):
 
             b["championId"] = new_champ
             used_champ_ids.append(new_champ)
+
+
+def load_scrapped_data(save_path):
+
+    data_files = [f for f in os.listdir(save_path) if f.endswith(".json")]
+    if not data_files:
+        logger.warning("No file found in the directory")
+        return pd.DataFrame(), False
+
+    return_file = ""
+    max_matches_in_a_file = 0
+    matches_number = 0
+
+    for f in data_files:
+        full_path = os.path.join(save_path, f)
+        try:
+            with open(full_path, "r") as file:
+                data_dict = json.load(file)
+                matches_number = len(data_dict)
+        except Exception as e:
+            logger.error(f"Error while trying to read file {f} : {e}")
+
+        if matches_number > max_matches_in_a_file:
+            max_matches_in_a_file = matches_number
+            return_file = f
+        elif matches_number == max_matches_in_a_file:
+            if os.path.getmtime(full_path) > os.path.getmtime(
+                os.path.join(save_path, return_file)
+            ):
+                return_file = f
+
+    if not return_file:
+        logger.info("Did not find a proper file")
+        return pd.DataFrame(), False
+
+    logger.info(f"Find a proper file. Loading file {return_file}")
+    logger.info(f"The number of matches in the file is {matches_number}")
+    with open(os.path.join(save_path, return_file)) as file:
+        json_string = json.load(file)
+        return pd.json_normalize(json_string), True
