@@ -1,33 +1,16 @@
+import logging
 from helper import (
     convert_unix_timestamp_to_date,
-    load_scrapped_data,
     replace_missed_bans,
     riot_request,
     save_json_to_dir,
     shuffle_picks_order_with_weights,
 )
-from dotenv import load_dotenv
 from tqdm import tqdm
-import logging
-import os
 
-# Logger config
-os.makedirs("./logs", exist_ok=True)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("./logs/data_scrapping.log"),
-        logging.StreamHandler(),
-    ],
-)
+from main import HEADERS, SAVE_AFTER_ITERATION
+
 logger = logging.getLogger(__name__)
-
-# Constants
-load_dotenv("secrets/api_keys.key")
-API_KEY = os.getenv("RIOT_API_KEY")
-HEADERS = {"X-Riot-Token": API_KEY}
-SAVE_AFTER_ITERATION = 1000
 
 
 class Dataset:
@@ -234,27 +217,3 @@ class Dataset:
             ", thus modified so it can be used"
         )
         return game_data
-
-
-if __name__ == "__main__":
-    try:
-        # Checking to see if the scrapping is already done
-        save_path = os.path.join(os.getcwd(), "datasets")
-        df_matches, data_scrapped = load_scrapped_data(save_path)
-
-        if not data_scrapped:
-            # Creating dataset
-            europe__chall_dataset = Dataset(
-                region="EUROPE",
-                queue="RANKED_SOLO_5x5",
-                game_count=60,
-                player_count=250,
-                elo="challenger",
-            )
-
-            # Extracting data
-            european_chall_matches = europe__chall_dataset.extract_match_data()
-
-    except Exception as e:
-        logger.critical(f"Fatal error: {e}", exc_info=True)
-        raise
