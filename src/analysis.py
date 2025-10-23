@@ -3,23 +3,12 @@ import logging
 import matplotlib.pyplot as plt
 import pandas as pd
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("./logs/data_analysis.log"),
-        logging.StreamHandler(),
-    ],
-)
 logger = logging.getLogger(__name__)
 
 
 class DatasetAnalysis:
     def __init__(self, dataset: pd.DataFrame) -> None:
-        self.dataset = dataset.dropna(subset=["game_duration"])
-        self.dataset["game_duration"] = pd.to_numeric(
-            self.dataset["game_duration"], errors="coerce"
-        )
+        self.dataset = dataset
         self.num_matches = len(dataset)
 
     # --- Global stats ---
@@ -42,6 +31,11 @@ class DatasetAnalysis:
         return blue_side_win_rate, red_side_win_rate
 
     def get_game_duration_stats(self):
+
+        self.dataset = self.dataset.dropna(subset=["game_duration"])
+        self.dataset["game_duration"] = pd.to_numeric(
+            self.dataset["game_duration"], errors="coerce"
+        )
 
         stats = self.dataset["game_duration"].describe()
         logger.info(f"Average game time : {stats["mean"]:.2f}")
