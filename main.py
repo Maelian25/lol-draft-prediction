@@ -1,4 +1,3 @@
-import logging
 import os
 from typing import List
 
@@ -6,22 +5,12 @@ import pandas as pd
 
 from src.analysis import DatasetAnalysis
 from src.dataset import Dataset
-from src.helper import load_scrapped_data
+from src.helper import get_logger, load_scrapped_data
 
 
 if __name__ == "__main__":
 
-    # Logger setup
-    os.makedirs("./logs", exist_ok=True)
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler("./logs/main_file.log"),
-            logging.StreamHandler(),
-        ],
-    )
-    logger = logging.getLogger(__name__)
+    logger = get_logger("Main", "main_file.log")
 
     # Constants
     SAVE_AFTER_ITERATION = 1000
