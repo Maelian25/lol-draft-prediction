@@ -23,6 +23,9 @@ def riot_request(url, max_retries=5):
     """Make a Riot API request with dynamic key reload and retry logic"""
     for attempt in range(max_retries):
         api_key = get_api_key()
+        if not api_key:
+            logger.error("No key available.")
+            return None
         headers = {"X-Riot-Token": api_key}
 
         try:
@@ -42,16 +45,20 @@ def riot_request(url, max_retries=5):
             delay = float(resp.headers.get("Retry-After", 5))
             logging.warning(f"Rate limited. Sleeping for {delay}s...")
             time.sleep(delay)
+            continue
 
         # Invalid or expired key
         elif resp.status_code == 401 or resp.status_code == 403:
             logger.error("API key expired or invalid. Waiting for update...")
+            global _CACHE_VALID
+            _CACHE_VALID = False
             wait_for_new_key()
             continue
 
         else:
             logging.error(f"Error {resp.status_code} : {resp.text[:200]}")
             time.sleep(5)
+            continue
 
     logger.critical("Max retries reached. Giving up.")
     return None
