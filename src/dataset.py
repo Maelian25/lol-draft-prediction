@@ -1,5 +1,5 @@
 import logging
-from helper import (
+from src.helper import (
     convert_unix_timestamp_to_date,
     replace_missed_bans,
     riot_request,
@@ -8,8 +8,14 @@ from helper import (
 )
 from tqdm import tqdm
 
-from main import HEADERS, SAVE_AFTER_ITERATION
-
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("./logs/data_scrapping.log"),
+        logging.StreamHandler(),
+    ],
+)
 logger = logging.getLogger(__name__)
 
 
@@ -19,13 +25,23 @@ class Dataset:
     and other params
     """
 
-    def __init__(self, region, queue, game_count, player_count, elo) -> None:
+    def __init__(
+        self,
+        region,
+        queue,
+        game_count,
+        player_count,
+        elo,
+        headers,
+        save_after_iteration,
+    ) -> None:
         self.region = region
         self.queue = queue
         self.game_count = game_count
         self.player_count = player_count
-        self.headers = HEADERS
         self.elo = elo
+        self.headers = headers
+        self.save_after_iteration = save_after_iteration
 
         # API's urls
         self.player_list_url = ("/lol/league/v4/{elo}leagues/by-queue/").format(
@@ -200,7 +216,7 @@ class Dataset:
                     }
                 )
 
-                if idx % SAVE_AFTER_ITERATION == 0 and idx != 0:
+                if idx % self.save_after_iteration == 0 and idx != 0:
                     save_json_to_dir(game_data, "Datasets", self.region, idx)
 
             except Exception as e:
