@@ -1,11 +1,12 @@
 import os
 import time
-import logging
 from typing import Optional
 import requests
 from dotenv import load_dotenv
 
-logger = logging.getLogger(__name__)
+from src.helper import get_logger
+
+logger = get_logger("Api_key_helper", "api_key_helper.log")
 
 # global caching
 _CACHED_API_KEY: Optional[str] = None

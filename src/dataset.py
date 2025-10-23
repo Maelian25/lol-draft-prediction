@@ -1,15 +1,13 @@
-import logging
 from typing import Any, Dict, List
 from src.helper import (
     convert_unix_timestamp_to_date,
+    get_logger,
     replace_missed_bans,
     riot_request,
     save_json_to_dir,
     shuffle_picks_order_with_weights,
 )
 from tqdm import tqdm
-
-logger = logging.getLogger(__name__)
 
 
 class Dataset:
@@ -33,6 +31,7 @@ class Dataset:
         self.player_count = player_count
         self.elo = elo
         self.save_after_iteration = save_after_iteration
+        self.logger = get_logger("Dataset", "data_scrapping.log")
 
         # API's urls
         self.player_list_url = ("/lol/league/v4/{elo}leagues/by-queue/").format(
@@ -59,8 +58,8 @@ class Dataset:
         # Caching challenger player list to avoid requesting too many times
         self._challenger_players = None
 
-        logger.info(f"Dataset created for {self.region} - Queue {self.queue}")
-        logger.info(f"Host: {self.host} | Match host: {self.match_host}")
+        self.logger.info(f"Dataset created for {self.region} - Queue {self.queue}")
+        self.logger.info(f"Host: {self.host} | Match host: {self.match_host}")
 
     def get_challenger_player_list(self) -> list:
         """Get challenger players on the server"""
@@ -68,16 +67,16 @@ class Dataset:
             return self._challenger_players
 
         request_url = f"https://{self.host}{self.player_list_url}{self.queue}"
-        logger.info(f"Getting the {self.elo} player list...")
+        self.logger.info(f"Getting the {self.elo} player list...")
         data = riot_request(url=request_url)
         if not data:
-            logger.error("Failed to get the challenger player list")
+            self.logger.error("Failed to get the challenger player list")
             return []
 
         entries = data["entries"]
         summoners_puuid = [e["puuid"] for e in entries]
 
-        logger.info(f"Number of {self.elo} players found : {len(summoners_puuid)}")
+        self.logger.info(f"Number of {self.elo} players found : {len(summoners_puuid)}")
 
         self._challenger_players = summoners_puuid[: self.player_count]
         return self._challenger_players
@@ -87,7 +86,7 @@ class Dataset:
         match_ids = set()
         players = self.get_challenger_player_list()
 
-        logger.info(f"Getting matches for {len(players)} players...")
+        self.logger.info(f"Getting matches for {len(players)} players...")
 
         for player_puuid in tqdm(players, desc="Player count"):
             request_url = (
@@ -99,9 +98,9 @@ class Dataset:
             if data and isinstance(data, list):
                 match_ids.update(data)
             else:
-                logger.warning(f"No match found for player {player_puuid[:8]}...")
+                self.logger.warning(f"No match found for player {player_puuid[:8]}...")
 
-        logger.info(
+        self.logger.info(
             (
                 f"Total of unique matches found: {len(match_ids)}"
                 ", whithout filtering queue"
@@ -122,7 +121,7 @@ class Dataset:
         match_ids = self.get_match_ids()
         game_missing_ban_count = 0
 
-        logger.info(f"Extracting data for {len(match_ids)} matches...")
+        self.logger.info(f"Extracting data for {len(match_ids)} matches...")
         idx = 0
         for game_id in tqdm(list(match_ids), desc="Game count per player"):
             idx += 1
@@ -213,17 +212,17 @@ class Dataset:
                     )
 
             except Exception as e:
-                logger.error(f"Error when dealing with match {game_id}: {e}")
+                self.logger.error(f"Error when dealing with match {game_id}: {e}")
                 continue
 
         save_json_to_dir(
             game_data, "./datasets", regionId, len(game_data), elo=self.elo
         )
 
-        logger.info(
+        self.logger.info(
             f"Extraction finished: {len(game_data)} matches successfully analyzed"
         )
-        logger.info(
+        self.logger.info(
             f"Games with at least one missing ban: {game_missing_ban_count}"
             ", thus modified so it can be used"
         )

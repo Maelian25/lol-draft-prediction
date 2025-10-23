@@ -17,7 +17,7 @@ if __name__ == "__main__":
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
         handlers=[
-            logging.FileHandler("./logs/data_scrapping.log"),
+            logging.FileHandler("./logs/main_file.log"),
             logging.StreamHandler(),
         ],
     )

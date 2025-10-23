@@ -1,15 +1,14 @@
-import logging
-
 import matplotlib.pyplot as plt
 import pandas as pd
 
-logger = logging.getLogger(__name__)
+from src.helper import get_logger
 
 
 class DatasetAnalysis:
     def __init__(self, dataset: pd.DataFrame) -> None:
         self.dataset = dataset
         self.num_matches = len(dataset)
+        self.logger = get_logger("Analysis", "data_analysis.log")
 
     # --- Global stats ---
     def get_win_rate_per_side(self):
@@ -21,10 +20,10 @@ class DatasetAnalysis:
         blue_side_win_rate = blue_side_win / self.num_matches * 100
         red_side_win_rate = 100 - blue_side_win_rate
 
-        logger.info(
+        self.logger.info(
             f"The blue side win rate in this dataset is {blue_side_win_rate:.3f}%"
         )
-        logger.info(
+        self.logger.info(
             f"The red side win rate in this dataset is {red_side_win_rate:.3f}%"
         )
 
@@ -38,7 +37,7 @@ class DatasetAnalysis:
         )
 
         stats = self.dataset["game_duration"].describe()
-        logger.info(f"Average game time : {stats["mean"]:.2f}")
+        self.logger.info(f"Average game time : {stats["mean"]:.2f}")
 
         # Creation of a figure to analyze game time
         fig, axes = plt.subplots(1, 2, figsize=(10, 6))
@@ -87,8 +86,12 @@ class DatasetAnalysis:
 
     def get_patch_distribution(self):
         stats = self.dataset["game_version"].describe()
-        logger.info(f"The patch on which most games has been played is {stats["top"]}")
-        logger.info(f"There is a total of {stats["unique"]} patches in this dataset")
+        self.logger.info(
+            f"The patch on which most games has been played is {stats["top"]}"
+        )
+        self.logger.info(
+            f"There is a total of {stats["unique"]} patches in this dataset"
+        )
 
         patch_counts = self.dataset["game_version"].value_counts().sort_index()
 
