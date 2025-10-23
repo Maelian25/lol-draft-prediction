@@ -1,4 +1,5 @@
 import logging
+from typing import Any, Dict, List
 from src.helper import (
     convert_unix_timestamp_to_date,
     replace_missed_bans,
@@ -8,14 +9,6 @@ from src.helper import (
 )
 from tqdm import tqdm
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("./logs/data_scrapping.log"),
-        logging.StreamHandler(),
-    ],
-)
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +25,6 @@ class Dataset:
         game_count,
         player_count,
         elo,
-        headers,
         save_after_iteration,
     ) -> None:
         self.region = region
@@ -40,7 +32,6 @@ class Dataset:
         self.game_count = game_count
         self.player_count = player_count
         self.elo = elo
-        self.headers = headers
         self.save_after_iteration = save_after_iteration
 
         # API's urls
@@ -78,7 +69,7 @@ class Dataset:
 
         request_url = f"https://{self.host}{self.player_list_url}{self.queue}"
         logger.info(f"Getting the {self.elo} player list...")
-        data = riot_request(url=request_url, headers=self.headers)
+        data = riot_request(url=request_url)
         if not data:
             logger.error("Failed to get the challenger player list")
             return []
@@ -103,7 +94,7 @@ class Dataset:
                 f"https://{self.match_host}{self.matches_url}{player_puuid}"
                 f"/ids?count={self.game_count}"
             )
-            data = riot_request(url=request_url, headers=self.headers)
+            data = riot_request(url=request_url)
 
             if data and isinstance(data, list):
                 match_ids.update(data)
@@ -125,7 +116,7 @@ class Dataset:
                 return team.get("teamId")
         return None
 
-    def extract_match_data(self):
+    def extract_match_data(self, regionId) -> List[Dict[str, Any]]:
         """Extract detailed data from every match"""
         game_data = []
         match_ids = self.get_match_ids()
@@ -136,7 +127,7 @@ class Dataset:
         for game_id in tqdm(list(match_ids), desc="Game count per player"):
             idx += 1
             request_url = f"https://{self.match_host}{self.match_data_url}{game_id}"
-            data = riot_request(url=request_url, headers=self.headers)
+            data = riot_request(url=request_url)
 
             if not data:
                 idx -= 1
@@ -217,13 +208,17 @@ class Dataset:
                 )
 
                 if idx % self.save_after_iteration == 0 and idx != 0:
-                    save_json_to_dir(game_data, "Datasets", self.region, idx)
+                    save_json_to_dir(
+                        game_data, "./datasets", regionId, idx, elo=self.elo
+                    )
 
             except Exception as e:
                 logger.error(f"Error when dealing with match {game_id}: {e}")
                 continue
 
-        save_json_to_dir(game_data, "./datasets", self.region, len(game_data))
+        save_json_to_dir(
+            game_data, "./datasets", regionId, len(game_data), elo=self.elo
+        )
 
         logger.info(
             f"Extraction finished: {len(game_data)} matches successfully analyzed"

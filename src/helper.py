@@ -1,11 +1,14 @@
 import json
 import os
+from typing import Tuple
 import requests
 import time
 import logging
 from datetime import datetime
 import random
 import pandas as pd
+
+from src.api_key_helper import get_api_key, wait_for_new_key
 
 # 100 requests are allowed every 2 minutes, and 20 requests per seconds
 TIME_LIMIT = 120
@@ -16,29 +19,51 @@ DDRAGONVERSION = "15.20.1"
 logger = logging.getLogger(__name__)
 
 
-def riot_request(url, headers):
-    while True:
-        resp = requests.get(url=url, headers=headers)
-        # Rate limit reached
-        if resp.status_code == 429:
-            delay = int(resp.headers.get("Retry-After", "2"))
-            logging.info(f"Rate limited. Sleeping for {delay}s...")
-            time.sleep(delay)
+def riot_request(url, max_retries=5):
+    """Make a Riot API request with dynamic key reload and retry logic"""
+    for attempt in range(max_retries):
+        api_key = get_api_key()
+        headers = {"X-Riot-Token": api_key}
+
+        try:
+            resp = requests.get(url=url, headers=headers)
+        except requests.RequestException as e:
+            logger.error(f"Network error: {e}. Retrying in 5s...")
+            time.sleep(5)
             continue
-        if resp.status_code != 200:
-            logging.error(f"Error {resp.status_code} : {resp.text}")
-            return None
-        else:
+
+        # Success
+        if resp.status_code == 200:
             time.sleep(TIME_LIMIT / REQUEST_LIMIT)
-        return resp.json()
+            return resp.json()
+
+        # Rate limit reached
+        elif resp.status_code == 429:
+            delay = float(resp.headers.get("Retry-After", 5))
+            logging.warning(f"Rate limited. Sleeping for {delay}s...")
+            time.sleep(delay)
+
+        # Invalid or expired key
+        elif resp.status_code == 401 or resp.status_code == 403:
+            logger.error("API key expired or invalid. Waiting for update...")
+            wait_for_new_key()
+            continue
+
+        else:
+            logging.error(f"Error {resp.status_code} : {resp.text[:200]}")
+            time.sleep(5)
+
+    logger.critical("Max retries reached. Giving up.")
+    return None
 
 
-def save_json_to_dir(data, dir, region, idx):
+def save_json_to_dir(data, dir, region, idx, elo):
     try:
         os.makedirs(dir, exist_ok=True)
+        os.makedirs(os.path.join(dir, region), exist_ok=True)
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{dir}/{region}_picks_bans_{timestamp}.json"
+        filename = f"{dir}/{region}/{region}_{elo}_picks_bans_{timestamp}.json"
 
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
@@ -153,9 +178,17 @@ def replace_missed_bans(bans):
             used_champ_ids.append(new_champ)
 
 
-def load_scrapped_data(save_path):
+def load_scrapped_data(save_path, region, elo) -> Tuple[pd.DataFrame, bool]:
 
-    data_files = [f for f in os.listdir(save_path) if f.endswith(".json")]
+    if not os.path.exists(save_path):
+        logger.warning("The directory doesn't exist")
+        return pd.DataFrame(), False
+
+    data_files = [
+        f
+        for f in os.listdir(save_path)
+        if f.endswith(".json") and f.startswith(f"{region}_{elo}")
+    ]
     if not data_files:
         logger.warning("No file found in the directory")
         return pd.DataFrame(), False
