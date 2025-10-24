@@ -9,6 +9,7 @@ import random
 import pandas as pd
 
 from src.api_key_helper import get_api_key, wait_for_new_key
+from src.logger_config import get_logger
 
 # 100 requests are allowed every 2 minutes, and 20 requests per seconds
 TIME_LIMIT = 120
@@ -16,7 +17,7 @@ REQUEST_LIMIT = 100
 
 DDRAGONVERSION = "15.20.1"
 
-logger = logging.getLogger(__name__)
+logger = get_logger("Helper", "helper.log")
 
 
 def riot_request(url, max_retries=5):
@@ -185,7 +186,7 @@ def replace_missed_bans(bans):
             used_champ_ids.append(new_champ)
 
 
-def load_scrapped_data(save_path, region, elo) -> Tuple[pd.DataFrame, bool]:
+def load_scrapped_data(save_path, regionId, elo) -> Tuple[pd.DataFrame, bool]:
 
     if not os.path.exists(save_path):
         logger.warning("The directory doesn't exist")
@@ -194,7 +195,7 @@ def load_scrapped_data(save_path, region, elo) -> Tuple[pd.DataFrame, bool]:
     data_files = [
         f
         for f in os.listdir(save_path)
-        if f.endswith(".json") and f.startswith(f"{region}_{elo}")
+        if f.endswith(".json") and f.startswith(f"{regionId}_{elo}")
     ]
     if not data_files:
         logger.warning("No file found in the directory")
@@ -231,26 +232,3 @@ def load_scrapped_data(save_path, region, elo) -> Tuple[pd.DataFrame, bool]:
     with open(os.path.join(save_path, return_file)) as file:
         json_string = json.load(file)
         return pd.json_normalize(json_string), True
-
-
-def get_logger(name, log_file, level=logging.info):
-    """Create a logger with a given name and log file."""
-    os.makedirs("./logs", exist_ok=True)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-
-    if not logger.handlers:
-        file_handler = logging.FileHandler(f"./logs/{log_file}")
-        stream_handler = logging.StreamHandler()
-
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-        file_handler.setFormatter(formatter)
-        stream_handler.setFormatter(formatter)
-
-        logger.addHandler(file_handler)
-        logger.addHandler(stream_handler)
-
-    return logger

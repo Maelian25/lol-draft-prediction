@@ -5,7 +5,8 @@ import pandas as pd
 
 from src.analysis import DatasetAnalysis
 from src.dataset import Dataset
-from src.helper import get_logger, load_scrapped_data
+from src.helper import load_scrapped_data
+from src.logger_config import get_logger
 
 
 if __name__ == "__main__":
@@ -35,7 +36,7 @@ if __name__ == "__main__":
                 logger.info(f"Starting data processing for {region} ({elo})")
 
                 df_region, data_scrapped = load_scrapped_data(
-                    os.path.join(save_path, regions[region]), region, elo
+                    region_save_dir, short_name, elo
                 )
 
                 if not data_scrapped:

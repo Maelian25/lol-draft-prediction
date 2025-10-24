@@ -1,13 +1,14 @@
 from typing import Any, Dict, List
 from src.helper import (
     convert_unix_timestamp_to_date,
-    get_logger,
     replace_missed_bans,
     riot_request,
     save_json_to_dir,
     shuffle_picks_order_with_weights,
 )
 from tqdm import tqdm
+
+from src.logger_config import get_logger
 
 
 class Dataset:

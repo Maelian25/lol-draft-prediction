@@ -4,7 +4,7 @@ from typing import Optional
 import requests
 from dotenv import load_dotenv
 
-from src.helper import get_logger
+from src.logger_config import get_logger
 
 logger = get_logger("Api_key_helper", "api_key_helper.log")
 

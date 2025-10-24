@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from src.helper import get_logger
+from src.logger_config import get_logger
 
 
 class DatasetAnalysis:
