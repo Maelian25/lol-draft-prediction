@@ -66,9 +66,8 @@ if __name__ == "__main__":
         df_all_matches_scrapped = pd.concat(data_from_every_region, ignore_index=True)
 
         # --- Analysing data ---
-        # First dataset scrapped for now
         analysis = DatasetAnalysis(df_all_matches_scrapped)
-        blue_side_win_rate, red_side_win_rate = analysis.get_win_rate_per_side()
+        analysis.get_win_rate_per_side()
         analysis.get_patch_distribution()
 
     except Exception as e:

@@ -6,32 +6,27 @@ from src.logger_config import get_logger
 
 class DatasetAnalysis:
     def __init__(self, dataset: pd.DataFrame) -> None:
-        self.dataset = dataset
+        self.dataset = dataset.drop_duplicates(subset=["match_id"], ignore_index=True)
+        self.dataset = self.dataset.dropna()
         self.num_matches = len(dataset)
         self.logger = get_logger("Analysis", "data_analysis.log")
 
     # --- Global stats ---
     def get_win_rate_per_side(self):
-        blue_side_win = 0
 
-        for match in self.dataset.itertuples():
-            blue_side_win = blue_side_win + 1 if match.blue_side_win else blue_side_win
-
-        blue_side_win_rate = blue_side_win / self.num_matches * 100
-        red_side_win_rate = 100 - blue_side_win_rate
+        blue_side_win = self.dataset["blue_side_win"].value_counts(normalize=True)
 
         self.logger.info(
-            f"The blue side win rate in this dataset is {blue_side_win_rate:.3f}%"
+            f"The blue side win rate in this dataset is {blue_side_win[True]*100:.3f}%"
         )
         self.logger.info(
-            f"The red side win rate in this dataset is {red_side_win_rate:.3f}%"
+            f"The red side win rate in this dataset is {blue_side_win[False]*100:.3f}%"
         )
 
-        return blue_side_win_rate, red_side_win_rate
+        return blue_side_win
 
     def get_game_duration_stats(self):
 
-        self.dataset = self.dataset.dropna(subset=["game_duration"])
         self.dataset["game_duration"] = pd.to_numeric(
             self.dataset["game_duration"], errors="coerce"
         )
@@ -86,14 +81,19 @@ class DatasetAnalysis:
 
     def get_patch_distribution(self):
         stats = self.dataset["game_version"].describe()
-        self.logger.info(
-            f"The patch on which most games has been played is {stats["top"]}"
-        )
+
         self.logger.info(
             f"There is a total of {stats["unique"]} patches in this dataset"
         )
+        self.logger.info(
+            f"The patch on which most games has been played is {stats["top"]}"
+        )
 
         patch_counts = self.dataset["game_version"].value_counts().sort_index()
+
+        self.logger.info(
+            f"Total games on patch {stats["top"]} : {patch_counts[stats["top"]]}"
+        )
 
         patch_counts.plot(kind="bar", color="skyblue", edgecolor="black", alpha=0.7)
 

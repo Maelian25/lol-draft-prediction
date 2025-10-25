@@ -124,7 +124,7 @@ class Dataset:
 
         self.logger.info(f"Extracting data for {len(match_ids)} matches...")
         idx = 0
-        for game_id in tqdm(list(match_ids), desc="Game count per player"):
+        for game_id in tqdm(list(match_ids), desc="Game count"):
             idx += 1
             request_url = f"https://{self.match_host}{self.match_data_url}{game_id}"
             data = riot_request(url=request_url)
