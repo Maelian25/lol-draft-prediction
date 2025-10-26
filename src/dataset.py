@@ -224,7 +224,6 @@ class Dataset:
             f"Extraction finished: {len(game_data)} matches successfully analyzed"
         )
         self.logger.info(
-            f"Games with at least one missing ban: {game_missing_ban_count}"
-            ", thus modified so it can be used"
+            f"Games with at least one missing ban: {game_missing_ban_count}."
         )
         return game_data

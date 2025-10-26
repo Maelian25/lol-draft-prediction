@@ -29,7 +29,7 @@ def get_regional_data_from_api_threaded(region, short_name):
         region_save_dir = os.path.join(SAVE_PATH, short_name)
         os.makedirs(region_save_dir, exist_ok=True)
 
-        region_logger.info(f"Starting data processing for {region} ({elo})")
+        region_logger.info(f"Started scrapping {region}-{elo}")
 
         df_region, data_scrapped = load_scrapped_data(region_save_dir, short_name, elo)
 
