@@ -228,7 +228,7 @@ def load_scrapped_data(save_path, regionId, elo) -> Tuple[pd.DataFrame, bool]:
         return pd.DataFrame(), False
 
     logger.info(f"Found a proper file! Loading file {return_file}")
-    logger.info(f"The number of matches in the file is {matches_number}")
+
     with open(os.path.join(save_path, return_file)) as file:
         json_string = json.load(file)
         return pd.json_normalize(json_string), True

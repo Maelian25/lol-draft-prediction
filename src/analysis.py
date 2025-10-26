@@ -6,9 +6,14 @@ from src.logger_config import get_logger
 
 class DatasetAnalysis:
     def __init__(self, dataset: pd.DataFrame) -> None:
+        # Operations on dataset to make data expoloitable
         self.dataset = dataset.drop_duplicates(subset=["match_id"], ignore_index=True)
         self.dataset = self.dataset.dropna()
-        self.num_matches = len(dataset)
+        self.dataset["game_duration"] = pd.to_numeric(
+            self.dataset["game_duration"], errors="coerce"
+        )
+
+        self.num_matches = len(self.dataset)
         self.logger = get_logger("Analysis", "data_analysis.log")
 
     # --- Global stats ---
@@ -26,10 +31,6 @@ class DatasetAnalysis:
         return blue_side_win
 
     def get_game_duration_stats(self):
-
-        self.dataset["game_duration"] = pd.to_numeric(
-            self.dataset["game_duration"], errors="coerce"
-        )
 
         stats = self.dataset["game_duration"].describe()
         self.logger.info(f"Average game time : {stats["mean"]:.2f}")
