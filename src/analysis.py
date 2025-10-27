@@ -14,7 +14,7 @@ from src.logger_config import get_logger
 class DatasetAnalysis:
     """Enables analysis on a given dataset"""
 
-    def __init__(self, dataset: pd.DataFrame) -> None:
+    def __init__(self, dataset: pd.DataFrame, patches: List[str]) -> None:
         self.dataset = dataset.drop_duplicates(subset=["match_id"], ignore_index=True)
         self.dataset = self.dataset.dropna()
         self.dataset["game_duration"] = pd.to_numeric(
@@ -23,7 +23,9 @@ class DatasetAnalysis:
         self.dataset = replace_wrong_position(self.dataset)
 
         self.num_matches = len(self.dataset)
+        self.patches = patches
         self.logger = get_logger("Analysis", "data_analysis.log")
+        self.logger.info(f"Analysing dataset for patch {"-".join(patches)}")
 
     # --- Global stats ---
     def get_win_rate_per_side(self):
@@ -113,10 +115,12 @@ class DatasetAnalysis:
         return stats["top"]
 
     # --- Champion stats ---
-    def get_champ_win_rate(self, patch: str):
+    def get_champ_win_rate(self):
         """Provide champ win rate on a patch"""
         win_rate_dict = defaultdict(Counter)
-        for row in self.dataset[self.dataset["game_version"] == patch].itertuples():
+        for row in self.dataset[
+            self.dataset["game_version"].isin(self.patches)
+        ].itertuples():
             picks: List[Dict[str, Any]] = getattr(row, "picks", [{}])
             blue_side_win = getattr(row, "blue_side_win", bool)
 
@@ -140,7 +144,6 @@ class DatasetAnalysis:
             data.append(
                 {
                     "championId": champ_id,
-                    "championName": champId_to_champName(champ_id),
                     "games": total_games,
                     "wins": counts["win"],
                     "losses": counts["lose"],
@@ -154,22 +157,14 @@ class DatasetAnalysis:
             .reset_index(drop=True)
         )
 
-        df_result.head(10).plot(
-            x="championName",
-            y="win_rate",
-            kind="bar",
-            color="skyblue",
-            title=f"Top 10 champion winrates – Patch {patch}",
-        )
-        plt.ylabel("Win rate")
-        plt.tight_layout()
-        plt.show()
         return df_result
 
-    def get_champ_pick_or_ban_rate(self, pick: bool, patch: str):
+    def get_champ_pick_or_ban_rate(self, pick: bool):
         """Provide champ pick or ban rate given a patch"""
         champ_rates = dict()
-        for row in self.dataset[self.dataset["game_version"] == patch].itertuples():
+        for row in self.dataset[
+            self.dataset["game_version"].isin(self.patches)
+        ].itertuples():
             if pick:
                 champs_data: List[Dict[str, Any]] = getattr(row, "picks", [{}])
             else:
@@ -202,11 +197,13 @@ class DatasetAnalysis:
 
         return champ_rates
 
-    def get_role_distribution(self, patch: str, champ: str | int | None = None):
+    def get_role_distribution(self, champ: str | int | None = None):
         """Provide role distribution for a champ given a patch"""
         role_counts = defaultdict(Counter)
 
-        for row in self.dataset[self.dataset["game_version"] == patch].itertuples():
+        for row in self.dataset[
+            self.dataset["game_version"].isin(self.patches)
+        ].itertuples():
 
             champs_data: List[Dict[str, Any]] = getattr(row, "picks", [{}])
 
@@ -244,18 +241,96 @@ class DatasetAnalysis:
         return df_champ_role
 
     # --- Matchup / synergy ---
-    def get_counters(self, champ): ...
+    def get_counters(self, champ):
+        counter_map: dict[int, dict[int, dict[str, int]]] = defaultdict(dict)
+        # {champ : {counter_pick : {games_played_versus, game_won_versus}
+        for row in self.dataset[
+            self.dataset["game_version"].isin(self.patches)
+        ].itertuples():
+            picks = getattr(row, "picks", [{}])
+
+            blue_side_picks = [pick for pick in picks if pick["side"] == "blue"]
+            red_side_picks = [pick for pick in picks if pick["side"] == "red"]
+
+            blue_side_win = True if getattr(row, "blue_side_win", bool) else False
+
+            for pick in picks:
+
+                champ_id = pick["championId"]
+                pick_position = pick["position"]
+                pick_side = pick["side"]
+                counter_pick = -1
+                won = 0
+
+                if pick_side == "blue":
+                    if blue_side_win:
+                        won = 1
+                    for x in red_side_picks:
+                        if x["position"] == pick_position:
+                            counter_pick = x["championId"]
+                else:
+                    if not blue_side_win:
+                        won = 1
+                    for x in blue_side_picks:
+                        if x["position"] == pick_position:
+                            counter_pick = x["championId"]
+
+                counter_map[champ_id][counter_pick] = {
+                    "games_played": counter_map[champ_id]
+                    .get(counter_pick, {})
+                    .get("games_played", 0)
+                    + 1,
+                    "games_won_against": counter_map[champ_id]
+                    .get(counter_pick, {})
+                    .get("games_won_against", 0)
+                    + won,
+                }
+
+        top5_counters = {}
+
+        for champ_id, counter_data in counter_map.items():
+
+            sorted_counter = sorted(
+                counter_data.items(),
+                key=lambda x: (
+                    x[1]["games_played"],
+                    (
+                        -x[1]["games_won_against"] / x[1]["games_played"]
+                        if x[1]["games_played"] > 0
+                        else 0
+                    ),
+                ),
+                reverse=True,
+            )
+
+            top5_counters[champ_id] = sorted_counter[:5]
+
+        champ_name = champId_to_champName(champ)
+        self.logger.info(f"Top 5 counters for {champ_name}:")
+        for opp_id, stats in top5_counters[champ]:
+            opp_name = champId_to_champName(opp_id)
+            self.logger.info(
+                f"  vs {opp_name}: {stats['games_played']} games, "
+                f"{stats['games_won_against']} wins, "
+                f"{stats['games_won_against']/stats['games_played'] * 100:.2f}% "
+                "win rate"
+            )
+
+        return top5_counters[champ]
+
     def get_matchup_stats(self, champ1, champ2): ...
     def get_synergy(self, champ1, champ2): ...
     def get_team_synergy(self, team_champs): ...
     def get_synergy_matrix(self): ...
 
     # --- Draft analysis ---
-    def get_first_pick_stats(self, patch):
+    def get_first_pick_stats(
+        self,
+    ):
         """Provide first and last pick stats"""
         fp_rates = {"fp": defaultdict(int), "lp": defaultdict(int)}
 
-        df_patch = self.dataset[self.dataset["game_version"] == patch]
+        df_patch = self.dataset[self.dataset["game_version"].isin(self.patches)]
         num_games = len(df_patch)
 
         for row in df_patch.itertuples():
@@ -308,15 +383,13 @@ class DatasetAnalysis:
             drop=True
         )
 
-    def get_draft_order_correlation(self, patch: str | None = None):
+    def get_draft_order_correlation(self):
         """Provide some correlations between order and win rate"""
-        df = self.dataset.copy()
-        if patch:
-            df = df[df["game_version"] == patch]
+        df_patch = self.dataset[self.dataset["game_version"].isin(self.patches)]
 
         data = []
 
-        for row in df.itertuples():
+        for row in df_patch.itertuples():
             blue_win = getattr(row, "blue_side_win", False)
             for pick in getattr(row, "picks", []):
                 champ_id = pick["championId"]

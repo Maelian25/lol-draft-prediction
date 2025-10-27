@@ -6,7 +6,7 @@ import pandas as pd
 
 from src.analysis import DatasetAnalysis
 from src.dataset import Dataset
-from src.helper import load_scrapped_data
+from src.helper import champName_to_champId, load_scrapped_data
 from src.logger_config import get_logger
 
 logger = get_logger("Main", "main_file.log")
@@ -88,17 +88,19 @@ if __name__ == "__main__":
         df_world: pd.DataFrame = pd.concat(df_world_list, ignore_index=True)
 
         # --- Analysing data ---
-        analysis = DatasetAnalysis(df_world)
+        analysis = DatasetAnalysis(df_world, ["15.19", "15.20"])
+        champ = champName_to_champId("vayne")
 
         analysis.get_win_rate_per_side()
-        patch = analysis.get_patch_distribution()
+        analysis.get_patch_distribution()
         analysis.get_game_duration_stats()
-        analysis.get_champ_pick_or_ban_rate(patch=patch, pick=True)
-        analysis.get_champ_pick_or_ban_rate(patch=patch, pick=False)
-        analysis.get_role_distribution(patch=patch, champ=64)
-        analysis.get_champ_win_rate(patch)
-        analysis.get_first_pick_stats(patch)
-        analysis.get_draft_order_correlation(patch)
+        analysis.get_champ_pick_or_ban_rate(pick=True)
+        analysis.get_champ_pick_or_ban_rate(pick=False)
+        analysis.get_role_distribution(champ=champ)
+        analysis.get_champ_win_rate()
+        analysis.get_first_pick_stats()
+        analysis.get_draft_order_correlation()
+        analysis.get_counters(champ)
 
     except Exception as e:
         logger.critical(f"Fatal error: {e}", exc_info=True)
