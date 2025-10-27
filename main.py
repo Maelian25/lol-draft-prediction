@@ -93,6 +93,7 @@ if __name__ == "__main__":
         analysis.get_champ_pick_or_ban_rate(patch="15.20", pick=False)
         analysis.get_role_distribution(patch="15.20", champ=64)
         analysis.get_champ_win_rate("15.20")
+        analysis.get_first_pick_stats("15.20")
 
     except Exception as e:
         logger.critical(f"Fatal error: {e}", exc_info=True)

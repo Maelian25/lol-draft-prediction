@@ -248,8 +248,62 @@ class DatasetAnalysis:
     def get_synergy_matrix(self): ...
 
     # --- Draft analysis ---
-    def get_first_pick_stats(self): ...
-    def get_last_pick_stats(self): ...
+    def get_first_pick_stats(self, patch):
+        fp_rates = {"fp": defaultdict(int), "lp": defaultdict(int)}
+
+        df_patch = self.dataset[self.dataset["game_version"] == patch]
+        num_games = len(df_patch)
+
+        for row in df_patch.itertuples():
+            for pick in getattr(row, "picks", [{}]):
+                champ_id = pick.get("championId")
+                side = pick.get("side")
+                order = pick.get("order")
+
+                if not champ_id or not side or not order:
+                    continue
+
+                # First pick = blue side, order 1
+                if side == "blue" and order == 1:
+                    fp_rates["fp"][champ_id] += 1
+
+                # Last pick = red side, order 5
+                elif side == "red" and order == 5:
+                    fp_rates["lp"][champ_id] += 1
+
+        fp_df = pd.DataFrame(
+            [
+                {
+                    "championId": champ_id,
+                    "first_pick_count": fp_rates["fp"].get(champ_id, 0),
+                    "last_pick_count": fp_rates["lp"].get(champ_id, 0),
+                }
+                for champ_id in set(
+                    list(fp_rates["fp"].keys()) + list(fp_rates["lp"].keys())
+                )
+            ]
+        )
+
+        fp_df["first_pick_rate"] = fp_df["first_pick_count"] / num_games
+        fp_df["last_pick_rate"] = fp_df["last_pick_count"] / num_games
+
+        for x in ["first_pick_rate", "last_pick_rate"]:
+            fp_df = fp_df.sort_values(x, ascending=False).reset_index(drop=True)
+
+            highest_rate_id = fp_df.iloc[0]["championId"]
+            highest_rate = fp_df.iloc[0][x]
+
+            champ_name = champId_to_champName(highest_rate_id)
+
+            self.logger.info(
+                f"{champ_name} has the highest {" ".join(x.split("_"))} "
+                f"with {highest_rate * 100:.3f}%"
+            )
+
+        return fp_df.sort_values("first_pick_rate", ascending=False).reset_index(
+            drop=True
+        )
+
     def get_draft_order_correlation(self): ...
 
     # --- Feature generation ---
