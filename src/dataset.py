@@ -110,6 +110,7 @@ class Dataset:
         return match_ids
 
     def get_winner(self, match_data):
+        """Get winner from a single match"""
         teams = match_data.get("info", {}).get("teams", [])
         for team in teams:
             if team.get("win"):

@@ -20,6 +20,10 @@ ELOS = dict(
 
 
 def get_regional_data_from_api_threaded(region, short_name):
+    """
+    Provide regional data given a region.
+    Necessary to thread requests
+    """
     region_logger = get_logger(region, f"data_scrapping_{region.lower()}.log")
     region_logger.info(f"Starting region {region}")
 

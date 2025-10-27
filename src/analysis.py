@@ -12,8 +12,9 @@ from src.logger_config import get_logger
 
 
 class DatasetAnalysis:
+    """Enables analysis on a given dataset"""
+
     def __init__(self, dataset: pd.DataFrame) -> None:
-        # Operations on dataset to make data expoloitable
         self.dataset = dataset.drop_duplicates(subset=["match_id"], ignore_index=True)
         self.dataset = self.dataset.dropna()
         self.dataset["game_duration"] = pd.to_numeric(
@@ -26,7 +27,7 @@ class DatasetAnalysis:
 
     # --- Global stats ---
     def get_win_rate_per_side(self):
-
+        """Provide win rate for each side"""
         blue_side_win = self.dataset["blue_side_win"].value_counts(normalize=True)
 
         self.logger.info(
@@ -39,7 +40,7 @@ class DatasetAnalysis:
         return blue_side_win
 
     def get_game_duration_stats(self):
-
+        """Provide game duration stats through the dataset"""
         stats = self.dataset["game_duration"].describe()
         self.logger.info(f"Average game time : {stats["mean"]:.2f}")
 
@@ -89,6 +90,7 @@ class DatasetAnalysis:
         }
 
     def get_patch_distribution(self):
+        """Provide games distribution through patches"""
         stats = self.dataset["game_version"].describe()
 
         self.logger.info(
@@ -112,7 +114,7 @@ class DatasetAnalysis:
 
     # --- Champion stats ---
     def get_champ_win_rate(self, patch: str):
-
+        """Provide champ win rate on a patch"""
         win_rate_dict = defaultdict(Counter)
         for row in self.dataset[self.dataset["game_version"] == patch].itertuples():
             picks: List[Dict[str, Any]] = getattr(row, "picks", [{}])
@@ -165,7 +167,7 @@ class DatasetAnalysis:
         return df_result
 
     def get_champ_pick_or_ban_rate(self, pick: bool, patch: str):
-
+        """Provide champ pick or ban rate given a patch"""
         champ_rates = dict()
         for row in self.dataset[self.dataset["game_version"] == patch].itertuples():
             if pick:
@@ -201,6 +203,7 @@ class DatasetAnalysis:
         return champ_rates
 
     def get_role_distribution(self, patch: str, champ: str | int | None = None):
+        """Provide role distribution for a champ given a patch"""
         role_counts = defaultdict(Counter)
 
         for row in self.dataset[self.dataset["game_version"] == patch].itertuples():
@@ -249,6 +252,7 @@ class DatasetAnalysis:
 
     # --- Draft analysis ---
     def get_first_pick_stats(self, patch):
+        """Provide first and last pick stats"""
         fp_rates = {"fp": defaultdict(int), "lp": defaultdict(int)}
 
         df_patch = self.dataset[self.dataset["game_version"] == patch]
@@ -305,7 +309,7 @@ class DatasetAnalysis:
         )
 
     def get_draft_order_correlation(self, patch: str | None = None):
-
+        """Provide some correlations between order and win rate"""
         df = self.dataset.copy()
         if patch:
             df = df[df["game_version"] == patch]

@@ -70,6 +70,7 @@ def riot_request(url, max_retries=5):
 
 
 def save_json_to_dir(data, dir, region, idx, elo):
+    """Save a json scrapped into a directory proper to elo and region"""
     try:
         os.makedirs(dir, exist_ok=True)
         os.makedirs(os.path.join(dir, region), exist_ok=True)
@@ -90,12 +91,15 @@ def save_json_to_dir(data, dir, region, idx, elo):
 
 
 def convert_unix_timestamp_to_date(ts):
+    """Convert timestamp to actual date"""
     timestamp = int(ts)
 
     return str(datetime.fromtimestamp(timestamp))
 
 
 def shuffle_picks_order_with_weights(picks, weights=[0.5, 0.7, 0.6, 0.2, 0.2]):
+    """Shuffle picks order to make data more realistic since
+    there is no way to get pick order from api"""
     blue_side_picks = []
     red_side_picks = []
 
@@ -162,7 +166,7 @@ def shuffle_picks_order_with_weights(picks, weights=[0.5, 0.7, 0.6, 0.2, 0.2]):
 # Function to take a random champ and replace de -1 in bans
 # so that we dont lose too many games for no real reason
 def replace_missed_bans(bans):
-
+    """Replace a ban in the dataset that is -1 so that there is 10 bans per game"""
     champions_id_and_name = get_champions_id_name_dict()
     all_champ_ids = list(champions_id_and_name.keys())
 
@@ -180,7 +184,7 @@ def replace_missed_bans(bans):
 
 
 def load_scrapped_data(save_path, regionId, elo) -> Tuple[pd.DataFrame, bool]:
-
+    """Allow loading data from files instead of scrapping it again"""
     if not os.path.exists(save_path):
         logger.warning("The directory doesn't exist")
         return pd.DataFrame(), False
@@ -228,6 +232,7 @@ def load_scrapped_data(save_path, regionId, elo) -> Tuple[pd.DataFrame, bool]:
 
 
 def get_champions_id_name_dict() -> Dict[int, str]:
+    """Provide mapping id to name for champions in the dataset"""
     response = requests.get(CHAMPION_FILE_URL)
     response.raise_for_status()
 
@@ -241,7 +246,7 @@ def get_champions_id_name_dict() -> Dict[int, str]:
 
 
 def champId_to_champName(champId: int) -> str:
-
+    """Provide corresponding name for a given id"""
     champions_id_and_name = get_champions_id_name_dict()
     champ_name = champions_id_and_name.get(champId)
     if not champ_name:
@@ -251,7 +256,7 @@ def champId_to_champName(champId: int) -> str:
 
 
 def champName_to_champId(champName: str):
-
+    """Provide corresponding id for a given name"""
     champions_name_and_id = {k: v for v, k in get_champions_id_name_dict().items()}
     champ_id = champions_name_and_id.get(champName.capitalize())
 
@@ -259,6 +264,8 @@ def champName_to_champId(champName: str):
 
 
 def replace_wrong_position(dataset: pd.DataFrame):
+    """Replace positions that would be corrupted in the dataset"""
+
     def fix_positions(picks):
         for pick in picks:
             if pick.get("position", "") == "":
