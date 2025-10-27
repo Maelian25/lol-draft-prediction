@@ -124,7 +124,6 @@ class DatasetAnalysis:
                 else:
                     pick_dict[current_champ] += 1
 
-        print(len(pick_dict))
         return pick_dict
 
     def get_champ_pick_or_ban_rate(self, pick: bool):
