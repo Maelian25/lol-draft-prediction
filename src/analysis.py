@@ -3,7 +3,11 @@ from typing import Dict, List, Any
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from src.helper import champId_to_champName, champName_to_champId
+from src.helper import (
+    champId_to_champName,
+    champName_to_champId,
+    replace_wrong_position,
+)
 from src.logger_config import get_logger
 
 
@@ -15,6 +19,7 @@ class DatasetAnalysis:
         self.dataset["game_duration"] = pd.to_numeric(
             self.dataset["game_duration"], errors="coerce"
         )
+        self.dataset = replace_wrong_position(self.dataset)
 
         self.num_matches = len(self.dataset)
         self.logger = get_logger("Analysis", "data_analysis.log")
@@ -343,9 +348,8 @@ class DatasetAnalysis:
         self.logger.info(f"Red side correlation: {red_side__correlation:.4f}")
 
         for (position, side), df_pos in grouped:
-            if position != "":
-                pos_corr = df_pos["order"].corr(df_pos["win"])
-                self.logger.info(f"{position} - {side}: {pos_corr:.4f}")
+            pos_corr = df_pos["order"].corr(df_pos["win"])
+            self.logger.info(f"{position} - {side}: {pos_corr:.4f}")
 
         return correlation
 

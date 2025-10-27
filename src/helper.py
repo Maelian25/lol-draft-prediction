@@ -256,3 +256,14 @@ def champName_to_champId(champName: str):
     champ_id = champions_name_and_id.get(champName.capitalize())
 
     return champ_id
+
+
+def replace_wrong_position(dataset: pd.DataFrame):
+    def fix_positions(picks):
+        for pick in picks:
+            if pick.get("position", "") == "":
+                pick["position"] = "SUPPORT"
+        return picks
+
+    dataset["picks"] = dataset["picks"].apply(fix_positions)
+    return dataset
