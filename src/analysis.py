@@ -331,7 +331,6 @@ class DatasetAnalysis:
                 )
 
         df_corr = pd.DataFrame(data)
-        print(df_corr)
 
         correlation = df_corr["order"].corr(df_corr["win"])
 
