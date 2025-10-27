@@ -92,13 +92,9 @@ class DatasetAnalysis:
         self.logger.info(
             f"The patch on which most games has been played is {stats["top"]}"
         )
+        self.logger.info(f"Total games on patch {stats["top"]} : {stats["freq"]}")
 
         patch_counts = self.dataset["game_version"].value_counts().sort_index()
-
-        self.logger.info(
-            f"Total games on patch {stats["top"]} : {patch_counts[stats["top"]]}"
-        )
-
         patch_counts.plot(kind="bar", color="skyblue", edgecolor="black", alpha=0.7)
 
         plt.title("Patch distribution")
