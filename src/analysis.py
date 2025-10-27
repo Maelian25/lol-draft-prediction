@@ -304,7 +304,42 @@ class DatasetAnalysis:
             drop=True
         )
 
-    def get_draft_order_correlation(self): ...
+    def get_draft_order_correlation(self, patch: str):
+
+        df = self.dataset.copy()
+        if patch:
+            df = df[df["game_version"] == patch]
+
+        data = []
+
+        for row in df.itertuples():
+            blue_win = getattr(row, "blue_side_win", False)
+            for pick in getattr(row, "picks", []):
+                champ_id = pick["championId"]
+                order = pick["order"]
+                side = pick["side"]
+
+                # Déterminer si ce pick a "gagné"
+                won = (blue_win and side == "blue") or (not blue_win and side == "red")
+
+                data.append(
+                    {
+                        "championId": champ_id,
+                        "order": order,
+                        "win": 1 if won else 0,
+                    }
+                )
+
+        df_corr = pd.DataFrame(data)
+        print(df_corr)
+
+        correlation = df_corr["order"].corr(df_corr["win"])
+
+        self.logger.info(
+            f"Overall correlation between pick order and win rate: {correlation:.4f}"
+        )
+
+        return correlation
 
     # --- Feature generation ---
     def build_feature_vector(self, champ_id): ...
