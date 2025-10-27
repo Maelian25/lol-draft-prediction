@@ -319,7 +319,6 @@ class DatasetAnalysis:
                 order = pick["order"]
                 side = pick["side"]
 
-                # Déterminer si ce pick a "gagné"
                 won = (blue_win and side == "blue") or (not blue_win and side == "red")
 
                 data.append(
