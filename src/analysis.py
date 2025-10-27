@@ -304,7 +304,7 @@ class DatasetAnalysis:
             drop=True
         )
 
-    def get_draft_order_correlation(self, patch: str):
+    def get_draft_order_correlation(self, patch: str | None = None):
 
         df = self.dataset.copy()
         if patch:
