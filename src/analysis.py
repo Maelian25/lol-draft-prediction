@@ -292,21 +292,17 @@ class DatasetAnalysis:
 
             sorted_counter = sorted(
                 counter_data.items(),
-                key=lambda x: (
-                    x[1]["games_played"],
-                    (
-                        -x[1]["games_won_against"] / x[1]["games_played"]
-                        if x[1]["games_played"] > 0
-                        else 0
-                    ),
-                ),
+                key=lambda x: x[1]["games_played"],
                 reverse=True,
             )
 
-            top5_counters[champ_id] = sorted_counter[:5]
+            top5_counters[champ_id] = sorted(
+                sorted_counter[: int(len(sorted_counter) * 0.1)],
+                key=lambda x: x[1]["games_won_against"] / x[1]["games_played"],
+            )
 
         champ_name = champId_to_champName(champ)
-        self.logger.info(f"Top 5 counters for {champ_name}:")
+        self.logger.info(f"Top 10% counters for {champ_name}:")
         for opp_id, stats in top5_counters[champ]:
             opp_name = champId_to_champName(opp_id)
             self.logger.info(
