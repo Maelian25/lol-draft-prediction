@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
         # --- Analysing data ---
         analysis = DatasetAnalysis(df_world, ["15.19", "15.20"])
-        champ = champName_to_champId("vayne")
+        champ = champName_to_champId("kai'sa")
 
         analysis.get_win_rate_per_side()
         analysis.get_patch_distribution()

@@ -239,7 +239,8 @@ def get_champions_id_name_dict() -> Dict[int, str]:
     data = response.json().get("data", {})
 
     champions_id_and_name = {
-        int(champ_info["key"]): champ_info["name"] for champ_info in data.values()
+        int(champ_info["key"]): champ_info["name"].capitalize()
+        for champ_info in data.values()
     }
 
     return champions_id_and_name

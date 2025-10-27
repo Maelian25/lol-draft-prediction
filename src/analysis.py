@@ -312,7 +312,7 @@ class DatasetAnalysis:
                 "win rate"
             )
 
-        return top5_counters[champ]
+        return counter_map[champ]
 
     def get_matchup_stats(self, champ1, champ2): ...
     def get_synergy(self, champ1, champ2): ...
