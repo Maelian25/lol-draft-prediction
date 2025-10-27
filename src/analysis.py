@@ -105,8 +105,6 @@ class DatasetAnalysis:
         plt.show()
         return stats["top"]
 
-    def get_dataset_summary(self): ...
-
     # --- Champion stats ---
     def get_champ_win_rate(self, patch: str):
 
@@ -315,6 +313,7 @@ class DatasetAnalysis:
                 champ_id = pick["championId"]
                 order = pick["order"]
                 side = pick["side"]
+                position = pick["position"]
 
                 won = (blue_win and side == "blue") or (not blue_win and side == "red")
 
@@ -322,17 +321,31 @@ class DatasetAnalysis:
                     {
                         "championId": champ_id,
                         "order": order,
+                        "side": side,
                         "win": 1 if won else 0,
+                        "position": position,
                     }
                 )
 
         df_corr = pd.DataFrame(data)
+        df_blue = df_corr[df_corr["side"] == "blue"]
+        df_red = df_corr[df_corr["side"] == "red"]
+        grouped = df_corr.groupby(["position", "side"])
 
         correlation = df_corr["order"].corr(df_corr["win"])
+        red_side__correlation = df_red["order"].corr(df_red["win"])
+        blue_side__correlation = df_blue["order"].corr(df_blue["win"])
 
         self.logger.info(
             f"Overall correlation between pick order and win rate: {correlation:.4f}"
         )
+        self.logger.info(f"Blue side correlation: {blue_side__correlation:.4f}")
+        self.logger.info(f"Red side correlation: {red_side__correlation:.4f}")
+
+        for (position, side), df_pos in grouped:
+            if position != "":
+                pos_corr = df_pos["order"].corr(df_pos["win"])
+                self.logger.info(f"{position} - {side}: {pos_corr:.4f}")
 
         return correlation
 
