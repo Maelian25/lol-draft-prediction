@@ -464,4 +464,4 @@ For questions, suggestions, or collaboration:
 
 **Made with ❤️ by Maelian Vuillemenot**
 
-*Last Updated: October 2024*
+*Last Updated: October 2025*
