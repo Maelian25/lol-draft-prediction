@@ -164,10 +164,10 @@ class DatasetAnalysis:
         plt.show()
         return df_result
 
-    def get_champ_pick_or_ban_rate(self, pick: bool):
+    def get_champ_pick_or_ban_rate(self, pick: bool, patch: str):
 
         champ_rates = dict()
-        for row in self.dataset.itertuples():
+        for row in self.dataset[self.dataset["game_version"] == patch].itertuples():
             if pick:
                 champs_data: List[Dict[str, Any]] = getattr(row, "picks", [{}])
             else:
@@ -200,10 +200,10 @@ class DatasetAnalysis:
 
         return champ_rates
 
-    def get_role_distribution(self, champ: str | int | None = None):
+    def get_role_distribution(self, patch: str, champ: str | int | None = None):
         role_counts = defaultdict(Counter)
 
-        for row in self.dataset.itertuples():
+        for row in self.dataset[self.dataset["game_version"] == patch].itertuples():
 
             champs_data: List[Dict[str, Any]] = getattr(row, "picks", [{}])
 

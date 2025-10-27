@@ -89,9 +89,9 @@ if __name__ == "__main__":
         analysis.get_win_rate_per_side()
         analysis.get_patch_distribution()
         analysis.get_game_duration_stats()
-        analysis.get_champ_pick_or_ban_rate(True)
-        analysis.get_champ_pick_or_ban_rate(False)
-        analysis.get_role_distribution(64)
+        analysis.get_champ_pick_or_ban_rate(patch="15.20", pick=True)
+        analysis.get_champ_pick_or_ban_rate(patch="15.20", pick=False)
+        analysis.get_role_distribution(patch="15.20", champ=64)
         analysis.get_champ_win_rate("15.20")
 
     except Exception as e:
