@@ -87,14 +87,14 @@ if __name__ == "__main__":
         analysis = DatasetAnalysis(df_world)
 
         analysis.get_win_rate_per_side()
-        analysis.get_patch_distribution()
+        patch = analysis.get_patch_distribution()
         analysis.get_game_duration_stats()
-        analysis.get_champ_pick_or_ban_rate(patch="15.20", pick=True)
-        analysis.get_champ_pick_or_ban_rate(patch="15.20", pick=False)
-        analysis.get_role_distribution(patch="15.20", champ=64)
-        analysis.get_champ_win_rate("15.20")
-        analysis.get_first_pick_stats("15.20")
-        analysis.get_draft_order_correlation("15.20")
+        analysis.get_champ_pick_or_ban_rate(patch=patch, pick=True)
+        analysis.get_champ_pick_or_ban_rate(patch=patch, pick=False)
+        analysis.get_role_distribution(patch=patch, champ=64)
+        analysis.get_champ_win_rate(patch)
+        analysis.get_first_pick_stats(patch)
+        analysis.get_draft_order_correlation(patch)
 
     except Exception as e:
         logger.critical(f"Fatal error: {e}", exc_info=True)

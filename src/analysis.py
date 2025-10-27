@@ -107,6 +107,7 @@ class DatasetAnalysis:
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()
+        return stats["top"]
 
     def get_dataset_summary(self): ...
 
