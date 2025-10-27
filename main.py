@@ -85,9 +85,13 @@ if __name__ == "__main__":
 
         # --- Analysing data ---
         analysis = DatasetAnalysis(df_world)
-        analysis.get_win_rate_per_side()
-        analysis.get_patch_distribution()
-        analysis.get_game_duration_stats()
+        # analysis.get_win_rate_per_side()
+        # analysis.get_patch_distribution()
+        # analysis.get_game_duration_stats()
+        # champ_pick_rate = analysis.get_champ_pick_or_ban_rate(True)
+        # champ_ban_rate = analysis.get_champ_pick_or_ban_rate(False)
+
+        analysis.get_role_distribution(64)
 
     except Exception as e:
         logger.critical(f"Fatal error: {e}", exc_info=True)

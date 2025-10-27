@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Tuple
+from typing import Dict, Tuple
 import requests
 import time
 import logging
@@ -16,6 +16,10 @@ TIME_LIMIT = 120
 REQUEST_LIMIT = 100
 
 DDRAGONVERSION = "15.20.1"
+CHAMPION_FILE_URL = (
+    f"https://ddragon.leagueoflegends.com/cdn/"
+    f"{DDRAGONVERSION}/data/en_US/champion.json"
+)
 
 logger = get_logger("Helper", "helper.log")
 
@@ -158,29 +162,18 @@ def shuffle_picks_order_with_weights(picks, weights=[0.5, 0.7, 0.6, 0.2, 0.2]):
 # Function to take a random champ and replace de -1 in bans
 # so that we dont lose too many games for no real reason
 def replace_missed_bans(bans):
-    champions_file_url = (
-        f"https://ddragon.leagueoflegends.com/cdn/"
-        f"{DDRAGONVERSION}/data/en_US/champion.json"
-    )
-    data = requests.get(champions_file_url).json()
-    champion_data = data["data"]
 
-    champions_id_and_name = [
-        {int(champion_data[name]["key"]): champion_data[name]["name"]}
-        for name in champion_data
-    ]
+    champions_id_and_name = get_champions_id_name_dict()
+    all_champ_ids = list(champions_id_and_name.keys())
 
     used_champ_ids = [b["championId"] for b in bans if b["championId"] != -1]
-    champ_replacement = random.choice(list(champions_id_and_name))
 
     for b in bans:
         if b["championId"] == -1:
-            champ_replacement = random.choice(list(champions_id_and_name))
-            new_champ = list(champ_replacement.keys())[0]
-
-            while new_champ in used_champ_ids:
-                champ_replacement = random.choice(champions_id_and_name)
-                new_champ = list(champ_replacement.keys())[0]
+            available_champs = list(set(all_champ_ids) - set(used_champ_ids))
+            if not available_champs:
+                break
+            new_champ = random.choice(available_champs)
 
             b["championId"] = new_champ
             used_champ_ids.append(new_champ)
@@ -232,3 +225,34 @@ def load_scrapped_data(save_path, regionId, elo) -> Tuple[pd.DataFrame, bool]:
     with open(os.path.join(save_path, return_file)) as file:
         json_string = json.load(file)
         return pd.json_normalize(json_string), True
+
+
+def get_champions_id_name_dict() -> Dict[int, str]:
+    response = requests.get(CHAMPION_FILE_URL)
+    response.raise_for_status()
+
+    data = response.json().get("data", {})
+
+    champions_id_and_name = {
+        int(champ_info["key"]): champ_info["name"] for champ_info in data.values()
+    }
+
+    return champions_id_and_name
+
+
+def champId_to_champName(champId: int) -> str:
+
+    champions_id_and_name = get_champions_id_name_dict()
+    champ_name = champions_id_and_name.get(champId)
+    if not champ_name:
+        return ""
+
+    return champ_name
+
+
+def champName_to_champId(champName: str):
+
+    champions_name_and_id = {k: v for v, k in get_champions_id_name_dict().items()}
+    champ_id = champions_name_and_id.get(champName.capitalize())
+
+    return champ_id

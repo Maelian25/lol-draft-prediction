@@ -1,6 +1,9 @@
+from collections import Counter, defaultdict
+from typing import Dict, List, Any
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from src.helper import champId_to_champName, champName_to_champId
 from src.logger_config import get_logger
 
 
@@ -108,10 +111,98 @@ class DatasetAnalysis:
     def get_dataset_summary(self): ...
 
     # --- Champion stats ---
-    def get_champ_win_rate(self): ...
-    def get_champ_pick_rate(self): ...
-    def get_champ_ban_rate(self): ...
-    def get_role_distribution(self, champ_id): ...
+    def get_champ_win_rate(self):
+
+        pick_dict = dict()
+        for row in self.dataset.itertuples():
+            picks: List[Dict[str, Any]] = getattr(row, "picks", [{}])
+
+            for p in picks:
+                current_champ = p["championId"]
+                if current_champ not in pick_dict:
+                    pick_dict[current_champ] = 1
+                else:
+                    pick_dict[current_champ] += 1
+
+        print(len(pick_dict))
+        return pick_dict
+
+    def get_champ_pick_or_ban_rate(self, pick: bool):
+
+        champ_rates = dict()
+        for row in self.dataset.itertuples():
+            if pick:
+                champs_data: List[Dict[str, Any]] = getattr(row, "picks", [{}])
+            else:
+                champs_data: List[Dict[str, Any]] = getattr(row, "bans", [{}])
+
+            for ch in champs_data:
+                current_champ = ch["championId"]
+                if current_champ not in champ_rates:
+                    champ_rates[current_champ] = 1
+                else:
+                    champ_rates[current_champ] += 1
+        champ_rates.update((x, y / self.num_matches) for x, y in champ_rates.items())
+
+        highest_rate_id = max(champ_rates, key=(lambda key: champ_rates[key]))
+        lowest_rate_id = min(champ_rates, key=(lambda key: champ_rates[key]))
+
+        highest_rate_champ = champId_to_champName(highest_rate_id)
+        lowest_rate_champ = champId_to_champName(lowest_rate_id)
+
+        self.logger.info(
+            f"{highest_rate_champ} has the highest "
+            f"{"pick" if pick else "ban"} rate "
+            f"with {champ_rates[highest_rate_id]*100:.3f}%"
+        )
+        self.logger.info(
+            f"{lowest_rate_champ} has the lowest "
+            f"{"pick" if pick else "ban"} rate "
+            f"with {champ_rates[lowest_rate_id]*100:.3f}%"
+        )
+
+        return champ_rates
+
+    def get_role_distribution(self, champ: str | int | None = None):
+        role_counts = defaultdict(Counter)
+
+        for row in self.dataset.itertuples():
+
+            champs_data: List[Dict[str, Any]] = getattr(row, "picks", [{}])
+
+            for ch in champs_data:
+                champion_id = ch["championId"]
+                role = ch.get("position") or "SUPPORT"
+                role_counts[champion_id][role] += 1
+
+        df_role_counts = pd.DataFrame(role_counts).fillna(0).astype(int).T
+
+        if not champ:
+            self.logger.info("Returning the whole table...")
+            return df_role_counts
+
+        if isinstance(champ, str):
+            champ_id = champName_to_champId(champ)
+            champ_name = champ
+        else:
+            champ_id = champ
+            champ_name = champId_to_champName(champ_id)
+
+        if champ_id not in df_role_counts.index:
+            self.logger.warning(f"Champ '{champ_name}' not found in the dataset")
+            return df_role_counts
+
+        df_champ_role = df_role_counts.loc[[champ_id]].T
+        df_champ_role.plot(kind="bar", color="skyblue", edgecolor="black", alpha=0.7)
+        plt.title(f"Role distribution for {champ_name.capitalize()}")
+        plt.xlabel("Roles")
+        plt.ylabel("Number of game")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
+
+        return df_champ_role
+
     def get_patch_winrate(self, champ_id): ...
 
     # --- Matchup / synergy ---
