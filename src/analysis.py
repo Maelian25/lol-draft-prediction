@@ -111,20 +111,58 @@ class DatasetAnalysis:
     def get_dataset_summary(self): ...
 
     # --- Champion stats ---
-    def get_champ_win_rate(self):
+    def get_champ_win_rate(self, patch: str):
 
-        pick_dict = dict()
-        for row in self.dataset.itertuples():
+        win_rate_dict = defaultdict(Counter)
+        for row in self.dataset[self.dataset["game_version"] == patch].itertuples():
             picks: List[Dict[str, Any]] = getattr(row, "picks", [{}])
+            blue_side_win = getattr(row, "blue_side_win", bool)
 
-            for p in picks:
-                current_champ = p["championId"]
-                if current_champ not in pick_dict:
-                    pick_dict[current_champ] = 1
+            for ch in picks:
+                champion_id = ch["championId"]
+                side = ch["side"]
+                if blue_side_win:
+                    if side == "blue":
+                        win_rate_dict[champion_id]["win"] += 1
+                    else:
+                        win_rate_dict[champion_id]["lose"] += 1
                 else:
-                    pick_dict[current_champ] += 1
+                    if side == "blue":
+                        win_rate_dict[champion_id]["lose"] += 1
+                    else:
+                        win_rate_dict[champion_id]["win"] += 1
+        data = []
+        for champ_id, counts in win_rate_dict.items():
+            total_games = counts["win"] + counts["lose"]
+            win_rate = counts["win"] / total_games if total_games > 0 else 0
+            data.append(
+                {
+                    "championId": champ_id,
+                    "championName": champId_to_champName(champ_id),
+                    "games": total_games,
+                    "wins": counts["win"],
+                    "losses": counts["lose"],
+                    "win_rate": win_rate * 100,
+                }
+            )
 
-        return pick_dict
+        df_result = (
+            pd.DataFrame(data)
+            .sort_values("win_rate", ascending=False)
+            .reset_index(drop=True)
+        )
+
+        df_result.head(10).plot(
+            x="championName",
+            y="win_rate",
+            kind="bar",
+            color="skyblue",
+            title=f"Top 10 champion winrates – Patch {patch}",
+        )
+        plt.ylabel("Win rate")
+        plt.tight_layout()
+        plt.show()
+        return df_result
 
     def get_champ_pick_or_ban_rate(self, pick: bool):
 
@@ -201,8 +239,6 @@ class DatasetAnalysis:
         plt.show()
 
         return df_champ_role
-
-    def get_patch_winrate(self, champ_id): ...
 
     # --- Matchup / synergy ---
     def get_counters(self, champ): ...
