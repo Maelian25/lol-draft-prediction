@@ -1,11 +1,17 @@
 from collections import Counter, defaultdict
+import itertools
+import math
 from typing import Dict, List, Any
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+import seaborn as sns
 
 from src.helper import (
+    champ_id_to_idx_map,
     champId_to_champName,
     champName_to_champId,
+    get_champions_id_name_dict,
     replace_wrong_position,
 )
 from src.logger_config import get_logger
@@ -113,6 +119,9 @@ class DatasetAnalysis:
         plt.tight_layout()
         plt.show()
         return stats["top"]
+
+    def get_unique_champs_number(self):
+        return len(get_champions_id_name_dict())
 
     # --- Champion stats ---
     def get_champ_win_rate(self):
@@ -297,7 +306,7 @@ class DatasetAnalysis:
             )
 
             top5_counters[champ_id] = sorted(
-                sorted_counter[: int(len(sorted_counter) * 0.1)],
+                sorted_counter[: int(len(sorted_counter) * 0.2)],
                 key=lambda x: x[1]["games_won_against"] / x[1]["games_played"],
             )
 
@@ -315,9 +324,87 @@ class DatasetAnalysis:
         return counter_map[champ]
 
     def get_matchup_stats(self, champ1, champ2): ...
-    def get_synergy(self, champ1, champ2): ...
-    def get_team_synergy(self, team_champs): ...
-    def get_synergy_matrix(self): ...
+
+    def get_synergy_matrix(self, plot=False):
+        """Return a n_champion*n_champion matrix, containing synergy value"""
+        num_champ = self.get_unique_champs_number()
+
+        game_count_matrix = np.zeros((num_champ, num_champ), dtype=np.float32)
+        game_won_count_matrix = np.zeros((num_champ, num_champ), dtype=np.float32)
+
+        champ_to_idx = champ_id_to_idx_map()
+
+        for match in self.dataset.itertuples():
+
+            picks = getattr(match, "picks", [{}])
+            blue_team_won = getattr(match, "blue_side_win", bool)
+
+            blue_team, red_team = [], []
+            for p in picks:
+                idx = champ_to_idx[p["championId"]]
+                if p["side"] == "blue":
+                    blue_team.append(idx)
+                else:
+                    red_team.append(idx)
+
+            for side, team in enumerate([blue_team, red_team]):
+                team_won = (blue_team_won and side == 0) or (
+                    not blue_team_won and side == 1
+                )
+
+                pairs = itertools.combinations(team, 2)
+                for i, j in pairs:
+                    game_count_matrix[i, j] += 1
+                    game_count_matrix[j, i] += 1
+                    if team_won:
+                        game_won_count_matrix[i, j] += 1
+                        game_won_count_matrix[j, i] += 1
+
+        with np.errstate(divide="ignore", invalid="ignore"):
+            synergy_matrix = np.divide(
+                game_won_count_matrix,
+                game_count_matrix,
+                out=np.zeros_like(game_won_count_matrix),
+                where=game_count_matrix != 0,
+            )
+
+        if plot:
+            champ_names = list(get_champions_id_name_dict().values())
+            df = pd.DataFrame(synergy_matrix, index=champ_names, columns=champ_names)
+
+            plt.figure(figsize=(16, 14))
+            sns.heatmap(df, cmap="coolwarm", center=0.5)
+            plt.title("Champion Synergy Matrix (Winrate when played together)")
+            plt.xlabel("Teammate Champion")
+            plt.ylabel("Champion")
+            plt.tight_layout()
+            plt.show()
+
+        return synergy_matrix
+
+    def get_synergy(self, champ1: int, champ2: int, print=False) -> float:
+        synergy_matrix = self.get_synergy_matrix()
+        champ_to_idx = champ_id_to_idx_map()
+        synergy_btw_champs = synergy_matrix[champ_to_idx[champ1], champ_to_idx[champ2]]
+
+        if print:
+            self.logger.info(
+                f"Synergy between {champId_to_champName(champ1)} "
+                f"and {champId_to_champName(champ2)} : {synergy_btw_champs * 100:.2f}%"
+            )
+
+        return synergy_btw_champs
+
+    def get_team_synergy(self, team_champs: List[int]) -> float:
+        team_synergy = 0
+        pairs = itertools.combinations(team_champs, 2)
+        for c in pairs:
+            team_synergy += self.get_synergy(c[0], c[1])
+        team_synergy /= math.comb(len(team_champs), 2)
+
+        self.logger.info(f"The team synergy is about {team_synergy * 100:.2f}%")
+
+        return team_synergy
 
     # --- Draft analysis ---
     def get_first_pick_stats(

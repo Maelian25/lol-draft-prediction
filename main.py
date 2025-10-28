@@ -6,7 +6,10 @@ import pandas as pd
 
 from src.analysis import DatasetAnalysis
 from src.dataset import Dataset
-from src.helper import champName_to_champId, load_scrapped_data
+from src.helper import (
+    champName_to_champId,
+    load_scrapped_data,
+)
 from src.logger_config import get_logger
 
 logger = get_logger("Main", "main_file.log")
@@ -88,8 +91,12 @@ if __name__ == "__main__":
         df_world: pd.DataFrame = pd.concat(df_world_list, ignore_index=True)
 
         # --- Analysing data ---
-        analysis = DatasetAnalysis(df_world, ["15.19", "15.20"])
+        analysis = DatasetAnalysis(df_world, patches=["15.19", "15.20", "15.21"])
         champ = champName_to_champId("kai'sa")
+        champ1 = champName_to_champId("lulu")
+        champ2 = champName_to_champId("vayne")
+        team_comp = ["ornn", "lee sin", "orianna", "yunara", "nautilus"]
+        team_comp_ids = [champName_to_champId(champ) for champ in team_comp]
 
         analysis.get_win_rate_per_side()
         analysis.get_patch_distribution()
@@ -101,6 +108,8 @@ if __name__ == "__main__":
         analysis.get_first_pick_stats()
         analysis.get_draft_order_correlation()
         analysis.get_counters(champ)
+        analysis.get_synergy(champ1=champ1, champ2=champ2, print=True)
+        analysis.get_team_synergy(team_comp_ids)
 
     except Exception as e:
         logger.critical(f"Fatal error: {e}", exc_info=True)

@@ -246,6 +246,14 @@ def get_champions_id_name_dict() -> Dict[int, str]:
     return champions_id_and_name
 
 
+def champ_id_to_idx_map():
+    champ_id_to_idx_map = {
+        champ: idx for idx, champ in enumerate(get_champions_id_name_dict().keys())
+    }
+
+    return champ_id_to_idx_map
+
+
 def champId_to_champName(champId: int) -> str:
     """Provide corresponding name for a given id"""
     champions_id_and_name = get_champions_id_name_dict()
@@ -260,6 +268,9 @@ def champName_to_champId(champName: str):
     """Provide corresponding id for a given name"""
     champions_name_and_id = {k: v for v, k in get_champions_id_name_dict().items()}
     champ_id = champions_name_and_id.get(champName.capitalize())
+
+    if not champ_id:
+        return -1
 
     return champ_id
 
