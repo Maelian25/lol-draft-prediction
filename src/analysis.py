@@ -54,6 +54,7 @@ class DatasetAnalysis:
         self.num_matches = len(self.dataset)
         self.logger.info(f"Number of games in the dataset : {self.num_matches}")
         self.unique_champs = len(self.champ_id_name_map)
+        self.synergy_matrix = self.get_synergy_matrix()
 
     # --- Global stats ---
     def get_win_rate_per_side(self):
@@ -110,7 +111,9 @@ class DatasetAnalysis:
             ax.grid(alpha=0.3)
 
             plt.tight_layout()
-            plt.show()
+            plt.show(block=False)
+            plt.pause(3)
+            plt.close()
 
         return {
             "count": int(stats["count"]),
@@ -140,7 +143,10 @@ class DatasetAnalysis:
         plt.ylabel("Game number")
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.show()
+        plt.show(block=False)
+        plt.pause(3)
+        plt.close()
+
         return stats["top"]
 
     # --- Champion stats ---
@@ -267,7 +273,9 @@ class DatasetAnalysis:
             plt.ylabel("Number of game")
             plt.xticks(rotation=45)
             plt.tight_layout()
-            plt.show()
+            plt.show(block=False)
+            plt.pause(3)
+            plt.close()
 
         return df_champ_role
 
@@ -343,7 +351,7 @@ class DatasetAnalysis:
 
         return pd.DataFrame(counter_map)
 
-    def get_synergy_matrix(self, as_dataframe=True, plot=False):
+    def get_synergy_matrix(self, plot=False):
         """Return a n_champion*n_champion matrix, containing synergy value"""
         num_champ = self.unique_champs
 
@@ -356,12 +364,12 @@ class DatasetAnalysis:
             if not picks:
                 continue
 
-            blue_team = [
+            blue_team_champs = [
                 self.champ_id_to_idx_map[p["championId"]]
                 for p in picks
                 if p["side"] == "blue"
             ]
-            red_team = [
+            red_team_champs = [
                 self.champ_id_to_idx_map[p["championId"]]
                 for p in picks
                 if p["side"] == "red"
@@ -369,14 +377,14 @@ class DatasetAnalysis:
 
             blue_team_won = getattr(match, "blue_side_win", bool)
 
-            for team, won in [
-                (blue_team, blue_team_won),
-                (red_team, not blue_team_won),
+            for champs, won in [
+                (blue_team_champs, blue_team_won),
+                (red_team_champs, not blue_team_won),
             ]:
-                mask = np.zeros((num_champ,), dtype=np.float32)
-                mask[team] = 1.0
+                team_representation = np.zeros((num_champ,), dtype=np.float32)
+                team_representation[champs] = 1.0
 
-                outer = np.outer(mask, mask)
+                outer = np.outer(team_representation, team_representation)
                 np.fill_diagonal(outer, 0)
 
                 game_count_matrix += outer
@@ -397,11 +405,12 @@ class DatasetAnalysis:
         )
 
         if plot:
-
             plt.figure(figsize=(12, 10))
             sns.heatmap(synergy_matrix, cmap="coolwarm", center=0.5)
             plt.title("Champion Synergy Matrix (Winrate)")
-            plt.show()
+            plt.show(block=False)
+            plt.pause(3)
+            plt.close()
 
         self.synergy_matrix = synergy_matrix
 
@@ -409,9 +418,8 @@ class DatasetAnalysis:
 
     def get_synergy(self, champ1: str, champ2: str, log=False):
         """Returns synergy between two given champs"""
-        synergy_matrix = self.get_synergy_matrix()
 
-        synergy_btw_champs = cast(float, synergy_matrix.at[champ1, champ2])
+        synergy_btw_champs = cast(float, self.synergy_matrix.at[champ1, champ2])
 
         if log:
             self.logger.info(
@@ -540,11 +548,14 @@ class DatasetAnalysis:
 
         for (position, side), df_pos in grouped:
             pos_corr = df_pos["order"].corr(df_pos["win"])
-            self.logger.info(f"{position} - {side}: {pos_corr:.4f}")
+            self.logger.info(
+                "Correlation "
+                f"considering {position} and {side} side : {pos_corr*100:.2f}%"
+            )
 
         return correlation
 
     # --- Feature generation ---
-    def get_champion_infos(self, champ1): ...
+    def get_champion_infos(self, champ_id): ...
     def build_feature_vector(self, champ_id): ...
     def get_team_features(self, team_champs): ...
