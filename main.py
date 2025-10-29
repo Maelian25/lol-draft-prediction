@@ -91,25 +91,48 @@ if __name__ == "__main__":
         df_world: pd.DataFrame = pd.concat(df_world_list, ignore_index=True)
 
         # --- Analysing data ---
-        analysis = DatasetAnalysis(df_world, patches=["15.19", "15.20", "15.21"])
-        champ = champName_to_champId("kai'sa")
-        champ1 = champName_to_champId("lulu")
-        champ2 = champName_to_champId("vayne")
-        team_comp = ["ornn", "lee sin", "orianna", "yunara", "nautilus"]
-        team_comp_ids = [champName_to_champId(champ) for champ in team_comp]
+        # Analysing the full dataset without patches restriction
+        full_dataset_analysis = DatasetAnalysis(df_world)
+        full_dataset_analysis.get_win_rate_per_side()
+        full_dataset_analysis.get_patch_distribution()
+        full_dataset_analysis.get_game_duration_stats(True)
+        full_dataset_analysis.get_draft_order_correlation()
+        logger.info("Analysis ended for the full dataset")
 
-        analysis.get_win_rate_per_side()
-        analysis.get_patch_distribution()
-        analysis.get_game_duration_stats()
-        analysis.get_champ_pick_or_ban_rate(pick=True)
-        analysis.get_champ_pick_or_ban_rate(pick=False)
-        analysis.get_role_distribution(champ=champ)
-        analysis.get_champ_win_rate()
-        analysis.get_first_pick_stats()
-        analysis.get_draft_order_correlation()
-        analysis.get_counters(champ)
-        analysis.get_synergy(champ1=champ1, champ2=champ2, print=True)
-        analysis.get_team_synergy(team_comp_ids)
+        # Analysing the full dataset with patches restriction
+        patches = ["15.19", "15.20", "15.21"]
+        dataset_on_patch_restriction = DatasetAnalysis(df_world, patches=patches)
+
+        dataset_on_patch_restriction.get_win_rate_per_side()
+        dataset_on_patch_restriction.get_game_duration_stats(plot=False)
+        pick_rate = dataset_on_patch_restriction.get_champ_pick_or_ban_rate(pick=True)
+        ban_rate = dataset_on_patch_restriction.get_champ_pick_or_ban_rate(pick=False)
+
+        dataset_on_patch_restriction.get_first_pick_stats()
+
+        # Currently without any plotting of any sort
+        dataset_on_patch_restriction.get_champ_win_rate()
+
+        # Analysing a champion as an example on chosen patches
+        champ_to_analyse = champName_to_champId("kai'sa")
+        dataset_on_patch_restriction.get_role_distribution(champ=champ_to_analyse)
+        all_counters = dataset_on_patch_restriction.get_counters(champ_to_analyse)
+        logger.info(f"Pick rate for Kai'Sa: {pick_rate[champ_to_analyse] * 100:.2f}%")
+        logger.info(f"Ban rate for Kai'Sa: {ban_rate[champ_to_analyse] * 100:.2f}%")
+
+        team_comp_to_analyse = ["ornn", "lee sin", "orianna", "yunara", "nautilus"]
+        team_comp_to_analyse_ids = [
+            champName_to_champId(champ) for champ in team_comp_to_analyse
+        ]
+
+        dataset_on_patch_restriction.get_synergy(
+            champ1=team_comp_to_analyse[0].capitalize(),
+            champ2=team_comp_to_analyse[1].capitalize(),
+            log=True,
+        )
+        dataset_on_patch_restriction.get_team_synergy(team_comp_to_analyse_ids)
+
+        logger.info("Analysis ended for the restricted dataset")
 
     except Exception as e:
         logger.critical(f"Fatal error: {e}", exc_info=True)

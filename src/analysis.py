@@ -1,7 +1,7 @@
 from collections import Counter, defaultdict
 import itertools
 import math
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional, cast
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -9,9 +9,8 @@ import seaborn as sns
 
 from src.helper import (
     champ_id_to_idx_map,
-    champId_to_champName,
     champName_to_champId,
-    get_champions_id_name_dict,
+    get_champions_id_name_map,
     replace_wrong_position,
 )
 from src.logger_config import get_logger
@@ -20,18 +19,41 @@ from src.logger_config import get_logger
 class DatasetAnalysis:
     """Enables analysis on a given dataset"""
 
-    def __init__(self, dataset: pd.DataFrame, patches: List[str]) -> None:
-        self.dataset = dataset.drop_duplicates(subset=["match_id"], ignore_index=True)
+    def __init__(
+        self, dataset: pd.DataFrame, patches: Optional[List[str]] = None
+    ) -> None:
+
+        self.logger = get_logger("Analysis", "data_analysis.log")
+        self.dataset = dataset
+
+        if patches:
+            self.logger.info(f"Analysing dataset for patch {"-".join(patches)}")
+            self.dataset = self.dataset[self.dataset["game_version"].isin(patches)]
+            self.patches = patches
+
+        else:
+            self.logger.info("Analysing full dataset")
+
+        self.dataset = self.dataset.drop_duplicates(
+            subset=["match_id"], ignore_index=True
+        )
         self.dataset = self.dataset.dropna()
         self.dataset["game_duration"] = pd.to_numeric(
             self.dataset["game_duration"], errors="coerce"
         )
         self.dataset = replace_wrong_position(self.dataset)
 
+        # champ_id -> name and reciprocal
+        self.champ_id_name_map = get_champions_id_name_map()
+        self.champ_name_id_map = {v: k for k, v in self.champ_id_name_map.items()}
+
+        # champ_id -> idx and reciprocal
+        self.champ_id_to_idx_map = champ_id_to_idx_map()
+        self.idx_to_champ_id_map = {v: k for k, v in self.champ_id_to_idx_map.items()}
+
         self.num_matches = len(self.dataset)
-        self.patches = patches
-        self.logger = get_logger("Analysis", "data_analysis.log")
-        self.logger.info(f"Analysing dataset for patch {"-".join(patches)}")
+        self.logger.info(f"Number of games in the dataset : {self.num_matches}")
+        self.unique_champs = len(self.champ_id_name_map)
 
     # --- Global stats ---
     def get_win_rate_per_side(self):
@@ -47,47 +69,48 @@ class DatasetAnalysis:
 
         return blue_side_win
 
-    def get_game_duration_stats(self):
+    def get_game_duration_stats(self, plot: bool):
         """Provide game duration stats through the dataset"""
         stats = self.dataset["game_duration"].describe()
         self.logger.info(f"Average game time : {stats["mean"]:.2f}")
 
         # Creation of a figure to analyze game time
-        fig, axes = plt.subplots(1, 2, figsize=(10, 6))
-        fig.suptitle("Game time analysis", fontsize=16)
+        if plot:
+            fig, axes = plt.subplots(1, 2, figsize=(10, 6))
+            fig.suptitle("Game time analysis", fontsize=16)
 
-        # Histo + density
-        ax = axes[0]
-        self.dataset["game_duration"].plot(
-            kind="hist",
-            bins=30,
-            density=True,
-            alpha=0.6,
-            color="skyblue",
-            edgecolor="black",
-            ax=ax,
-        )
-        self.dataset["game_duration"].plot(kind="kde", color="darkblue", ax=ax)
-        ax.set_title("Global distribution")
-        ax.set_xlabel("Game time (minutes)")
-        ax.set_ylabel("Density")
-        ax.grid(alpha=0.3)
+            # Histo + density
+            ax = axes[0]
+            self.dataset["game_duration"].plot(
+                kind="hist",
+                bins=30,
+                density=True,
+                alpha=0.6,
+                color="skyblue",
+                edgecolor="black",
+                ax=ax,
+            )
+            self.dataset["game_duration"].plot(kind="kde", color="darkblue", ax=ax)
+            ax.set_title("Global distribution")
+            ax.set_xlabel("Game time (minutes)")
+            ax.set_ylabel("Density")
+            ax.grid(alpha=0.3)
 
-        # Density per side
-        ax = axes[1]
-        self.dataset[self.dataset["blue_side_win"]]["game_duration"].plot(
-            kind="kde", label="Blue wins", color="blue", ax=ax
-        )
-        self.dataset[~self.dataset["blue_side_win"]]["game_duration"].plot(
-            kind="kde", label="Red wins", color="red", ax=ax
-        )
-        ax.set_title("Distribution per side winner")
-        ax.set_xlabel("Game time (minutes)")
-        ax.set_ylabel("Density")
-        ax.grid(alpha=0.3)
+            # Density per side
+            ax = axes[1]
+            self.dataset[self.dataset["blue_side_win"]]["game_duration"].plot(
+                kind="kde", label="Blue wins", color="blue", ax=ax
+            )
+            self.dataset[~self.dataset["blue_side_win"]]["game_duration"].plot(
+                kind="kde", label="Red wins", color="red", ax=ax
+            )
+            ax.set_title("Distribution per side winner")
+            ax.set_xlabel("Game time (minutes)")
+            ax.set_ylabel("Density")
+            ax.grid(alpha=0.3)
 
-        plt.tight_layout()
-        plt.show()
+            plt.tight_layout()
+            plt.show()
 
         return {
             "count": int(stats["count"]),
@@ -120,16 +143,12 @@ class DatasetAnalysis:
         plt.show()
         return stats["top"]
 
-    def get_unique_champs_number(self):
-        return len(get_champions_id_name_dict())
-
     # --- Champion stats ---
     def get_champ_win_rate(self):
-        """Provide champ win rate on a patch"""
+        """Provide champ win rate"""
         win_rate_dict = defaultdict(Counter)
-        for row in self.dataset[
-            self.dataset["game_version"].isin(self.patches)
-        ].itertuples():
+
+        for row in self.dataset.itertuples():
             picks: List[Dict[str, Any]] = getattr(row, "picks", [{}])
             blue_side_win = getattr(row, "blue_side_win", bool)
 
@@ -146,7 +165,9 @@ class DatasetAnalysis:
                         win_rate_dict[champion_id]["lose"] += 1
                     else:
                         win_rate_dict[champion_id]["win"] += 1
+
         data = []
+
         for champ_id, counts in win_rate_dict.items():
             total_games = counts["win"] + counts["lose"]
             win_rate = counts["win"] / total_games if total_games > 0 else 0
@@ -169,11 +190,11 @@ class DatasetAnalysis:
         return df_result
 
     def get_champ_pick_or_ban_rate(self, pick: bool):
-        """Provide champ pick or ban rate given a patch"""
+        """Provide champ pick or ban rate"""
+
         champ_rates = dict()
-        for row in self.dataset[
-            self.dataset["game_version"].isin(self.patches)
-        ].itertuples():
+
+        for row in self.dataset.itertuples():
             if pick:
                 champs_data: List[Dict[str, Any]] = getattr(row, "picks", [{}])
             else:
@@ -190,8 +211,8 @@ class DatasetAnalysis:
         highest_rate_id = max(champ_rates, key=(lambda key: champ_rates[key]))
         lowest_rate_id = min(champ_rates, key=(lambda key: champ_rates[key]))
 
-        highest_rate_champ = champId_to_champName(highest_rate_id)
-        lowest_rate_champ = champId_to_champName(lowest_rate_id)
+        highest_rate_champ = self.champ_id_name_map[highest_rate_id]
+        lowest_rate_champ = self.champ_id_name_map[lowest_rate_id]
 
         self.logger.info(
             f"{highest_rate_champ} has the highest "
@@ -206,13 +227,11 @@ class DatasetAnalysis:
 
         return champ_rates
 
-    def get_role_distribution(self, champ: str | int | None = None):
+    def get_role_distribution(self, champ: str | int | None = None, plot=False):
         """Provide role distribution for a champ given a patch"""
         role_counts = defaultdict(Counter)
 
-        for row in self.dataset[
-            self.dataset["game_version"].isin(self.patches)
-        ].itertuples():
+        for row in self.dataset.itertuples():
 
             champs_data: List[Dict[str, Any]] = getattr(row, "picks", [{}])
 
@@ -232,20 +251,23 @@ class DatasetAnalysis:
             champ_name = champ
         else:
             champ_id = champ
-            champ_name = champId_to_champName(champ_id)
+            champ_name = self.champ_id_name_map[champ_id]
 
         if champ_id not in df_role_counts.index:
             self.logger.warning(f"Champ '{champ_name}' not found in the dataset")
             return df_role_counts
 
         df_champ_role = df_role_counts.loc[[champ_id]].T
-        df_champ_role.plot(kind="bar", color="skyblue", edgecolor="black", alpha=0.7)
-        plt.title(f"Role distribution for {champ_name.capitalize()}")
-        plt.xlabel("Roles")
-        plt.ylabel("Number of game")
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        plt.show()
+        if plot:
+            df_champ_role.plot(
+                kind="bar", color="skyblue", edgecolor="black", alpha=0.7
+            )
+            plt.title(f"Role distribution for {champ_name.capitalize()}")
+            plt.xlabel("Roles")
+            plt.ylabel("Number of game")
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            plt.show()
 
         return df_champ_role
 
@@ -253,9 +275,7 @@ class DatasetAnalysis:
     def get_counters(self, champ):
         counter_map: dict[int, dict[int, dict[str, int]]] = defaultdict(dict)
         # {champ : {counter_pick : {games_played_versus, game_won_versus}
-        for row in self.dataset[
-            self.dataset["game_version"].isin(self.patches)
-        ].itertuples():
+        for row in self.dataset.itertuples():
             picks = getattr(row, "picks", [{}])
 
             blue_side_picks = [pick for pick in picks if pick["side"] == "blue"]
@@ -310,10 +330,10 @@ class DatasetAnalysis:
                 key=lambda x: x[1]["games_won_against"] / x[1]["games_played"],
             )
 
-        champ_name = champId_to_champName(champ)
+        champ_name = self.champ_id_name_map[champ]
         self.logger.info(f"Top 10% counters for {champ_name}:")
         for opp_id, stats in top5_counters[champ]:
-            opp_name = champId_to_champName(opp_id)
+            opp_name = self.champ_id_name_map[opp_id]
             self.logger.info(
                 f"  vs {opp_name}: {stats['games_played']} games, "
                 f"{stats['games_won_against']} wins, "
@@ -321,44 +341,47 @@ class DatasetAnalysis:
                 "win rate"
             )
 
-        return counter_map[champ]
+        return pd.DataFrame(counter_map)
 
-    def get_matchup_stats(self, champ1, champ2): ...
-
-    def get_synergy_matrix(self, plot=False):
+    def get_synergy_matrix(self, as_dataframe=True, plot=False):
         """Return a n_champion*n_champion matrix, containing synergy value"""
-        num_champ = self.get_unique_champs_number()
+        num_champ = self.unique_champs
 
         game_count_matrix = np.zeros((num_champ, num_champ), dtype=np.float32)
         game_won_count_matrix = np.zeros((num_champ, num_champ), dtype=np.float32)
 
-        champ_to_idx = champ_id_to_idx_map()
-
         for match in self.dataset.itertuples():
 
-            picks = getattr(match, "picks", [{}])
+            picks = getattr(match, "picks", [])
+            if not picks:
+                continue
+
+            blue_team = [
+                self.champ_id_to_idx_map[p["championId"]]
+                for p in picks
+                if p["side"] == "blue"
+            ]
+            red_team = [
+                self.champ_id_to_idx_map[p["championId"]]
+                for p in picks
+                if p["side"] == "red"
+            ]
+
             blue_team_won = getattr(match, "blue_side_win", bool)
 
-            blue_team, red_team = [], []
-            for p in picks:
-                idx = champ_to_idx[p["championId"]]
-                if p["side"] == "blue":
-                    blue_team.append(idx)
-                else:
-                    red_team.append(idx)
+            for team, won in [
+                (blue_team, blue_team_won),
+                (red_team, not blue_team_won),
+            ]:
+                mask = np.zeros((num_champ,), dtype=np.float32)
+                mask[team] = 1.0
 
-            for side, team in enumerate([blue_team, red_team]):
-                team_won = (blue_team_won and side == 0) or (
-                    not blue_team_won and side == 1
-                )
+                outer = np.outer(mask, mask)
+                np.fill_diagonal(outer, 0)
 
-                pairs = itertools.combinations(team, 2)
-                for i, j in pairs:
-                    game_count_matrix[i, j] += 1
-                    game_count_matrix[j, i] += 1
-                    if team_won:
-                        game_won_count_matrix[i, j] += 1
-                        game_won_count_matrix[j, i] += 1
+                game_count_matrix += outer
+                if won:
+                    game_won_count_matrix += outer
 
         with np.errstate(divide="ignore", invalid="ignore"):
             synergy_matrix = np.divide(
@@ -368,38 +391,47 @@ class DatasetAnalysis:
                 where=game_count_matrix != 0,
             )
 
-        if plot:
-            champ_names = list(get_champions_id_name_dict().values())
-            df = pd.DataFrame(synergy_matrix, index=champ_names, columns=champ_names)
+        champ_names = list(self.champ_id_name_map.values())
+        synergy_matrix = pd.DataFrame(
+            synergy_matrix, index=champ_names, columns=champ_names
+        )
 
-            plt.figure(figsize=(16, 14))
-            sns.heatmap(df, cmap="coolwarm", center=0.5)
-            plt.title("Champion Synergy Matrix (Winrate when played together)")
-            plt.xlabel("Teammate Champion")
-            plt.ylabel("Champion")
-            plt.tight_layout()
+        if plot:
+
+            plt.figure(figsize=(12, 10))
+            sns.heatmap(synergy_matrix, cmap="coolwarm", center=0.5)
+            plt.title("Champion Synergy Matrix (Winrate)")
             plt.show()
+
+        self.synergy_matrix = synergy_matrix
 
         return synergy_matrix
 
-    def get_synergy(self, champ1: int, champ2: int, print=False) -> float:
+    def get_synergy(self, champ1: str, champ2: str, log=False):
+        """Returns synergy between two given champs"""
         synergy_matrix = self.get_synergy_matrix()
-        champ_to_idx = champ_id_to_idx_map()
-        synergy_btw_champs = synergy_matrix[champ_to_idx[champ1], champ_to_idx[champ2]]
 
-        if print:
+        synergy_btw_champs = cast(float, synergy_matrix.at[champ1, champ2])
+
+        if log:
             self.logger.info(
-                f"Synergy between {champId_to_champName(champ1)} "
-                f"and {champId_to_champName(champ2)} : {synergy_btw_champs * 100:.2f}%"
+                f"Synergy between {champ1} "
+                f"and {champ2} : "
+                f"{synergy_btw_champs * 100:.2f}%"
             )
 
         return synergy_btw_champs
 
-    def get_team_synergy(self, team_champs: List[int]) -> float:
+    def get_team_synergy(self, team_champs: List[int]):
+        """Returns team synergy score"""
         team_synergy = 0
         pairs = itertools.combinations(team_champs, 2)
         for c in pairs:
-            team_synergy += self.get_synergy(c[0], c[1])
+            champ_name_1 = self.champ_id_name_map[c[0]]
+            champ_name_2 = self.champ_id_name_map[c[1]]
+            team_synergy += cast(
+                float, self.synergy_matrix.at[champ_name_1, champ_name_2]
+            )
         team_synergy /= math.comb(len(team_champs), 2)
 
         self.logger.info(f"The team synergy is about {team_synergy * 100:.2f}%")
@@ -455,7 +487,7 @@ class DatasetAnalysis:
             highest_rate_id = fp_df.iloc[0]["championId"]
             highest_rate = fp_df.iloc[0][x]
 
-            champ_name = champId_to_champName(highest_rate_id)
+            champ_name = self.champ_id_name_map[highest_rate_id]
 
             self.logger.info(
                 f"{champ_name} has the highest {" ".join(x.split("_"))} "
@@ -468,11 +500,10 @@ class DatasetAnalysis:
 
     def get_draft_order_correlation(self):
         """Provide some correlations between order and win rate"""
-        df_patch = self.dataset[self.dataset["game_version"].isin(self.patches)]
 
         data = []
 
-        for row in df_patch.itertuples():
+        for row in self.dataset.itertuples():
             blue_win = getattr(row, "blue_side_win", False)
             for pick in getattr(row, "picks", []):
                 champ_id = pick["championId"]
@@ -514,8 +545,6 @@ class DatasetAnalysis:
         return correlation
 
     # --- Feature generation ---
+    def get_champion_infos(self, champ1): ...
     def build_feature_vector(self, champ_id): ...
     def get_team_features(self, team_champs): ...
-
-    # --- Data quality ---
-    def check_missing_data(self): ...
