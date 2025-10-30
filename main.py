@@ -105,18 +105,24 @@ if __name__ == "__main__":
 
         dataset_on_patch_restriction.get_win_rate_per_side()
         dataset_on_patch_restriction.get_game_duration_stats(plot=False)
-        pick_rate = dataset_on_patch_restriction.get_champ_pick_or_ban_rate(pick=True)
-        ban_rate = dataset_on_patch_restriction.get_champ_pick_or_ban_rate(pick=False)
+        pick_rate = dataset_on_patch_restriction.get_champ_pick_or_ban_rate(
+            pick=True, plot=True
+        )
+        ban_rate = dataset_on_patch_restriction.get_champ_pick_or_ban_rate(
+            pick=False, plot=True
+        )
 
         dataset_on_patch_restriction.get_first_pick_stats()
 
         # Currently without any plotting of any sort
-        dataset_on_patch_restriction.get_champ_win_rate()
+        win_rate = dataset_on_patch_restriction.get_champ_win_rate()
 
         # Analysing a champion as an example on chosen patches
         champ_to_analyse = champName_to_champId("kai'sa")
         dataset_on_patch_restriction.get_role_distribution(champ=champ_to_analyse)
-        all_counters = dataset_on_patch_restriction.get_counters(champ_to_analyse)
+        all_counters = dataset_on_patch_restriction.get_counters(
+            champ_to_analyse, plot=True
+        )
         logger.info(f"Pick rate for Kai'Sa: {pick_rate[champ_to_analyse] * 100:.2f}%")
         logger.info(f"Ban rate for Kai'Sa: {ban_rate[champ_to_analyse] * 100:.2f}%")
 
@@ -131,6 +137,11 @@ if __name__ == "__main__":
             log=True,
         )
         dataset_on_patch_restriction.get_team_synergy(team_comp_to_analyse_ids)
+
+        dataset_on_patch_restriction.get_champion_infos(champ_to_analyse)
+
+        print("Champ embedding debut")
+        champ_embeddings = dataset_on_patch_restriction.champ_embedding_dict()
 
         logger.info("Analysis ended for the restricted dataset")
 

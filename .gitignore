@@ -45,7 +45,7 @@ Datasets/
 datasets/
 data/raw/
 data/processed/
-*.json
+
 !example_match.json
 
 # ============ LOGS ============

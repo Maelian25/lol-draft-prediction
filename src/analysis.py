@@ -10,6 +10,7 @@ import seaborn as sns
 from src.helper import (
     champ_id_to_idx_map,
     champName_to_champId,
+    get_champions_data,
     get_champions_id_name_map,
     replace_wrong_position,
 )
@@ -112,7 +113,7 @@ class DatasetAnalysis:
 
             plt.tight_layout()
             plt.show(block=False)
-            plt.pause(3)
+            plt.pause(2)
             plt.close()
 
         return {
@@ -144,7 +145,7 @@ class DatasetAnalysis:
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show(block=False)
-        plt.pause(3)
+        plt.pause(2)
         plt.close()
 
         return stats["top"]
@@ -183,7 +184,7 @@ class DatasetAnalysis:
                     "games": total_games,
                     "wins": counts["win"],
                     "losses": counts["lose"],
-                    "win_rate": win_rate * 100,
+                    "win_rate": float(win_rate),
                 }
             )
 
@@ -195,7 +196,7 @@ class DatasetAnalysis:
 
         return df_result
 
-    def get_champ_pick_or_ban_rate(self, pick: bool):
+    def get_champ_pick_or_ban_rate(self, pick: bool, plot=False):
         """Provide champ pick or ban rate"""
 
         champ_rates = dict()
@@ -220,16 +221,18 @@ class DatasetAnalysis:
         highest_rate_champ = self.champ_id_name_map[highest_rate_id]
         lowest_rate_champ = self.champ_id_name_map[lowest_rate_id]
 
-        self.logger.info(
-            f"{highest_rate_champ} has the highest "
-            f"{"pick" if pick else "ban"} rate "
-            f"with {champ_rates[highest_rate_id]*100:.3f}%"
-        )
-        self.logger.info(
-            f"{lowest_rate_champ} has the lowest "
-            f"{"pick" if pick else "ban"} rate "
-            f"with {champ_rates[lowest_rate_id]*100:.3f}%"
-        )
+        if plot:
+
+            self.logger.info(
+                f"{highest_rate_champ} has the highest "
+                f"{"pick" if pick else "ban"} rate "
+                f"with {champ_rates[highest_rate_id]*100:.3f}%"
+            )
+            self.logger.info(
+                f"{lowest_rate_champ} has the lowest "
+                f"{"pick" if pick else "ban"} rate "
+                f"with {champ_rates[lowest_rate_id]*100:.3f}%"
+            )
 
         return champ_rates
 
@@ -274,13 +277,13 @@ class DatasetAnalysis:
             plt.xticks(rotation=45)
             plt.tight_layout()
             plt.show(block=False)
-            plt.pause(3)
+            plt.pause(2)
             plt.close()
 
         return df_champ_role
 
     # --- Matchup / synergy ---
-    def get_counters(self, champ):
+    def get_counters(self, champ, plot):
         counter_map: dict[int, dict[int, dict[str, int]]] = defaultdict(dict)
         # {champ : {counter_pick : {games_played_versus, game_won_versus}
         for row in self.dataset.itertuples():
@@ -322,34 +325,44 @@ class DatasetAnalysis:
                     .get("games_won_against", 0)
                     + won,
                 }
+        if plot:
+            top_counters = {}
 
-        top5_counters = {}
+            for champ_id, counter_data in counter_map.items():
 
+                sorted_counter = sorted(
+                    counter_data.items(),
+                    key=lambda x: x[1]["games_played"],
+                    reverse=True,
+                )
+
+                top_counters[champ_id] = sorted(
+                    sorted_counter[: int(len(sorted_counter) * 0.2)],
+                    key=lambda x: x[1]["games_won_against"] / x[1]["games_played"],
+                )
+
+            champ_name = self.champ_id_name_map[champ]
+            self.logger.info(f"Top 10% counters for {champ_name}:")
+            for opp_id, stats in top_counters[champ]:
+                opp_name = self.champ_id_name_map[opp_id]
+                self.logger.info(
+                    f"  vs {opp_name}: {stats['games_played']} games, "
+                    f"{stats['games_won_against']} wins, "
+                    f"{stats['games_won_against']/stats['games_played'] * 100:.2f}% "
+                    "win rate"
+                )
+
+        new_counter_map: dict[int, dict[int, float]] = defaultdict(dict)
         for champ_id, counter_data in counter_map.items():
 
-            sorted_counter = sorted(
-                counter_data.items(),
-                key=lambda x: x[1]["games_played"],
-                reverse=True,
-            )
+            for counter_id, stats in counter_data.items():
+                new_counter_map[champ_id][counter_id] = (
+                    float(stats["games_won_against"] / stats["games_played"])
+                    if stats["games_played"] > 0
+                    else 0
+                )
 
-            top5_counters[champ_id] = sorted(
-                sorted_counter[: int(len(sorted_counter) * 0.2)],
-                key=lambda x: x[1]["games_won_against"] / x[1]["games_played"],
-            )
-
-        champ_name = self.champ_id_name_map[champ]
-        self.logger.info(f"Top 10% counters for {champ_name}:")
-        for opp_id, stats in top5_counters[champ]:
-            opp_name = self.champ_id_name_map[opp_id]
-            self.logger.info(
-                f"  vs {opp_name}: {stats['games_played']} games, "
-                f"{stats['games_won_against']} wins, "
-                f"{stats['games_won_against']/stats['games_played'] * 100:.2f}% "
-                "win rate"
-            )
-
-        return pd.DataFrame(counter_map)
+        return pd.DataFrame(new_counter_map)
 
     def get_synergy_matrix(self, plot=False):
         """Return a n_champion*n_champion matrix, containing synergy value"""
@@ -409,7 +422,7 @@ class DatasetAnalysis:
             sns.heatmap(synergy_matrix, cmap="coolwarm", center=0.5)
             plt.title("Champion Synergy Matrix (Winrate)")
             plt.show(block=False)
-            plt.pause(3)
+            plt.pause(2)
             plt.close()
 
         self.synergy_matrix = synergy_matrix
@@ -556,6 +569,65 @@ class DatasetAnalysis:
         return correlation
 
     # --- Feature generation ---
-    def get_champion_infos(self, champ_id): ...
-    def build_feature_vector(self, champ_id): ...
+    def get_champion_infos(self, champ_id: int):
+
+        champ_data: dict[int, Any] = {
+            int(v["key"]): v for _, v in get_champions_data().items()
+        }
+
+        infos = champ_data[champ_id]["info"]
+        tags = champ_data[champ_id]["tags"]
+        stats = champ_data[champ_id]["stats"]
+
+        champ_static_dict = (
+            infos | {"tags": ",".join(tags)} | stats
+        )  # Concat all three dicts
+
+        return champ_static_dict
+
+    def build_champion_features_vector(self, champ_id, pick_rate, ban_rate, win_rate):
+
+        role_distribution = self.get_role_distribution(champ=champ_id)
+
+        champ_counters = self.get_counters(champ_id, plot=False).loc[champ_id]
+        counters = champ_counters[champ_counters < 0.5].dropna().index.sort_values()
+
+        feature_dict = {
+            "champ_id": champ_id,
+            "pick_rate": pick_rate[champ_id],
+            "ban_rate": ban_rate[champ_id],
+            "win_rate": float(
+                win_rate.loc[self.champ_id_to_idx_map[champ_id]]["win_rate"].item()
+            ),
+            "role_most_played": role_distribution.idxmax().iloc[0],
+            "biggest_counter": int(counters[0]),
+            "counters_with_less_50%_win_rate": ",".join(map(str, counters.to_list())),
+        }
+
+        champ_static_info = self.get_champion_infos(champ_id)
+
+        features = feature_dict | champ_static_info
+
+        return pd.json_normalize(features)
+
+    def champ_embedding_dict(self):
+
+        pick_rate = self.get_champ_pick_or_ban_rate(pick=True)
+        ban_rate = self.get_champ_pick_or_ban_rate(pick=False)
+        win_rate = self.get_champ_win_rate()
+
+        champ_embeddings = []
+        for champ_id, _ in self.champ_id_name_map.items():
+
+            df = self.build_champion_features_vector(
+                champ_id, pick_rate=pick_rate, ban_rate=ban_rate, win_rate=win_rate
+            )
+            champ_embeddings.append(df)
+
+        final_df = pd.concat(champ_embeddings, ignore_index=True)
+
+        final_df.to_json("champions_vector.json")
+
+        return final_df
+
     def get_team_features(self, team_champs): ...

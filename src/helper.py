@@ -246,7 +246,17 @@ def get_champions_id_name_map() -> Dict[int, str]:
     return champions_id_and_name
 
 
+def get_champions_data() -> dict:
+    response = requests.get(CHAMPION_FILE_URL)
+    response.raise_for_status()
+
+    data = response.json().get("data", {})
+
+    return data
+
+
 def champ_id_to_idx_map():
+    """Provide mapping btw champ id and idx"""
     champ_id_to_idx_map = {
         champ: idx for idx, champ in enumerate(get_champions_id_name_map().keys())
     }
