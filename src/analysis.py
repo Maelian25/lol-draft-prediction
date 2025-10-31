@@ -24,7 +24,7 @@ class DatasetAnalysis:
         self, dataset: pd.DataFrame, patches: Optional[List[str]] = None
     ) -> None:
 
-        self.logger = get_logger("Analysis", "data_analysis.log")
+        self.logger = get_logger("DatasetAnalysis", "analysis.log")
         self.dataset = dataset
 
         if patches:
@@ -37,24 +37,30 @@ class DatasetAnalysis:
 
         self.dataset = self.dataset.drop_duplicates(
             subset=["match_id"], ignore_index=True
-        )
-        self.dataset = self.dataset.dropna()
+        ).dropna()
+
+        # Convert game_duration to numeric, coercing errors to NaN
         self.dataset["game_duration"] = pd.to_numeric(
             self.dataset["game_duration"], errors="coerce"
         )
+
+        # Replace wrong positions
         self.dataset = replace_wrong_position(self.dataset)
 
-        # champ_id -> name and reciprocal
+        # Load champion name and ID maps
         self.champ_id_name_map = get_champions_id_name_map()
         self.champ_name_id_map = {v: k for k, v in self.champ_id_name_map.items()}
 
-        # champ_id -> idx and reciprocal
+        # Load champion ID to index map and reciprocal
         self.champ_id_to_idx_map = champ_id_to_idx_map()
         self.idx_to_champ_id_map = {v: k for k, v in self.champ_id_to_idx_map.items()}
 
+        # Calculate number of matches and unique champions
         self.num_matches = len(self.dataset)
         self.logger.info(f"Number of games in the dataset : {self.num_matches}")
         self.unique_champs = len(self.champ_id_name_map)
+
+        # Get synergy matrix
         self.synergy_matrix = self.get_synergy_matrix()
 
     # --- Global stats ---
@@ -361,6 +367,8 @@ class DatasetAnalysis:
                     if stats["games_played"] > 0
                     else 0
                 )
+
+        return pd.DataFrame(new_counter_map)
 
         return pd.DataFrame(new_counter_map)
 
