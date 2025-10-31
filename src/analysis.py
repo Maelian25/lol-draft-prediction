@@ -25,15 +25,15 @@ class DatasetAnalysis:
     ) -> None:
 
         self.logger = get_logger("DatasetAnalysis", "analysis.log")
-        self.dataset = dataset
+        self.dataset = dataset.copy()
 
         if patches:
-            self.logger.info(f"Analysing dataset for patch {"-".join(patches)}")
+            self.logger.info(f"Analysing dataset for patch {'-'.join(patches)}")
             self.dataset = self.dataset[self.dataset["game_version"].isin(patches)]
             self.patches = patches
-
         else:
             self.logger.info("Analysing full dataset")
+            self.patches = None
 
         self.dataset = self.dataset.drop_duplicates(
             subset=["match_id"], ignore_index=True
@@ -60,8 +60,84 @@ class DatasetAnalysis:
         self.logger.info(f"Number of games in the dataset : {self.num_matches}")
         self.unique_champs = len(self.champ_id_name_map)
 
-        # Get synergy matrix
-        self.synergy_matrix = self.get_synergy_matrix()
+        # Compute synergy matrix and counter matrix once and for all
+        self.precompute_matrices()
+
+    def precompute_matrices(self):
+        """Compute synergy matrix and counter matrix"""
+
+        self.synergy_matrix = self.calculate_synergy_matrix()
+        # self.counter_matrix = self._calculate_counter_matrix() TODO
+
+    def calculate_synergy_matrix(self, plot=False, alpha=1) -> pd.DataFrame:
+        """
+        Compute synergy matrix based on winrate optimized
+
+        Args:
+            plot: Whether to plot or not the heatmap of the matrix
+            alpha: Parameter to compute Laplace smoothing
+
+        Returns:
+            pd.Dataframe: Synergy matrix with champion names as index and columns
+        """
+        num_champ = self.unique_champs
+
+        game_count_matrix = np.zeros((num_champ, num_champ), dtype=np.float32)
+        game_won_count_matrix = np.zeros((num_champ, num_champ), dtype=np.float32)
+
+        for match in self.dataset.itertuples():
+
+            picks = getattr(match, "picks", [])
+            if not picks:
+                continue
+
+            blue_team_champs = [
+                self.champ_id_to_idx_map[p["championId"]]
+                for p in picks
+                if p["side"] == "blue"
+            ]
+            red_team_champs = [
+                self.champ_id_to_idx_map[p["championId"]]
+                for p in picks
+                if p["side"] == "red"
+            ]
+
+            blue_team_won = getattr(match, "blue_side_win", bool)
+
+            for champs, won in [
+                (blue_team_champs, blue_team_won),
+                (red_team_champs, not blue_team_won),
+            ]:
+                team_representation = np.zeros((num_champ,), dtype=np.float32)
+                team_representation[champs] = 1.0
+
+                outer = np.outer(team_representation, team_representation)
+                np.fill_diagonal(outer, 0)
+
+                game_count_matrix += outer
+                if won:
+                    game_won_count_matrix += outer
+
+        synergy_matrix = (game_won_count_matrix + alpha) / (
+            game_count_matrix + 2 * alpha
+        )
+
+        synergy_matrix = np.nan_to_num(synergy_matrix, nan=0.5)
+
+        champ_names = list(self.champ_id_name_map.values())
+        symetry_df = pd.DataFrame(
+            synergy_matrix, index=champ_names, columns=champ_names
+        )
+
+        if plot:
+            plt.figure(figsize=(12, 10))
+            sns.heatmap(synergy_matrix, cmap="coolwarm", center=0.5)
+            plt.title("Champion Synergy Matrix (Winrate)")
+            plt.show(block=False)
+            plt.pause(2)
+            plt.close()
+
+        return symetry_df
 
     # --- Global stats ---
     def get_win_rate_per_side(self):
@@ -372,71 +448,6 @@ class DatasetAnalysis:
 
         return pd.DataFrame(new_counter_map)
 
-    def get_synergy_matrix(self, plot=False):
-        """Return a n_champion*n_champion matrix, containing synergy value"""
-        num_champ = self.unique_champs
-
-        game_count_matrix = np.zeros((num_champ, num_champ), dtype=np.float32)
-        game_won_count_matrix = np.zeros((num_champ, num_champ), dtype=np.float32)
-
-        for match in self.dataset.itertuples():
-
-            picks = getattr(match, "picks", [])
-            if not picks:
-                continue
-
-            blue_team_champs = [
-                self.champ_id_to_idx_map[p["championId"]]
-                for p in picks
-                if p["side"] == "blue"
-            ]
-            red_team_champs = [
-                self.champ_id_to_idx_map[p["championId"]]
-                for p in picks
-                if p["side"] == "red"
-            ]
-
-            blue_team_won = getattr(match, "blue_side_win", bool)
-
-            for champs, won in [
-                (blue_team_champs, blue_team_won),
-                (red_team_champs, not blue_team_won),
-            ]:
-                team_representation = np.zeros((num_champ,), dtype=np.float32)
-                team_representation[champs] = 1.0
-
-                outer = np.outer(team_representation, team_representation)
-                np.fill_diagonal(outer, 0)
-
-                game_count_matrix += outer
-                if won:
-                    game_won_count_matrix += outer
-
-        with np.errstate(divide="ignore", invalid="ignore"):
-            synergy_matrix = np.divide(
-                game_won_count_matrix,
-                game_count_matrix,
-                out=np.zeros_like(game_won_count_matrix),
-                where=game_count_matrix != 0,
-            )
-
-        champ_names = list(self.champ_id_name_map.values())
-        synergy_matrix = pd.DataFrame(
-            synergy_matrix, index=champ_names, columns=champ_names
-        )
-
-        if plot:
-            plt.figure(figsize=(12, 10))
-            sns.heatmap(synergy_matrix, cmap="coolwarm", center=0.5)
-            plt.title("Champion Synergy Matrix (Winrate)")
-            plt.show(block=False)
-            plt.pause(2)
-            plt.close()
-
-        self.synergy_matrix = synergy_matrix
-
-        return synergy_matrix
-
     def get_synergy(self, champ1: str, champ2: str, log=False):
         """Returns synergy between two given champs"""
 
@@ -458,9 +469,8 @@ class DatasetAnalysis:
         for c in pairs:
             champ_name_1 = self.champ_id_name_map[c[0]]
             champ_name_2 = self.champ_id_name_map[c[1]]
-            team_synergy += cast(
-                float, self.synergy_matrix.at[champ_name_1, champ_name_2]
-            )
+            team_synergy += self.synergy_matrix[champ_name_1, champ_name_2]
+
         team_synergy /= math.comb(len(team_champs), 2)
 
         self.logger.info(f"The team synergy is about {team_synergy * 100:.2f}%")
