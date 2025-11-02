@@ -1,7 +1,7 @@
 from collections import Counter, defaultdict
 import itertools
 import math
-from typing import Dict, List, Any, Optional, cast
+from typing import Dict, List, Any, NoReturn, Optional, cast
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -30,7 +30,10 @@ class DatasetAnalysis:
     """Enables analysis on a given dataset"""
 
     def __init__(
-        self, dataset: pd.DataFrame, patches: Optional[List[str]] = None
+        self,
+        dataset: pd.DataFrame,
+        compute_matrices=False,
+        patches: Optional[List[str]] = None,
     ) -> None:
 
         self.logger = get_logger("DatasetAnalysis", "analysis.log")
@@ -78,9 +81,8 @@ class DatasetAnalysis:
         self.champions_info_scaler = preprocessing.MinMaxScaler()
 
         # Compute synergy matrix and counter matrix once and for all
-        self._precompute_matrices()
-
-        exit()
+        if compute_matrices:
+            self._precompute_matrices()
 
     def _precompute_matrices(self):
         """Compute synergy matrix and counter matrix"""
@@ -373,7 +375,7 @@ class DatasetAnalysis:
                 )
 
             champ_name = self.champ_id_name_map[champ]
-            self.logger.info(f"Top 10% counters for {champ_name}:")
+            self.logger.info(f"Top 20% counters for {champ_name}:")
             for opp_id, stats in top_counters[champ]:
                 opp_name = self.champ_id_name_map[opp_id]
                 self.logger.info(
@@ -397,15 +399,20 @@ class DatasetAnalysis:
 
         return pd.DataFrame(new_counter_map)
 
-    def get_synergy(self, champ1: str, champ2: str, log=False):
-        """Returns synergy between two given champs"""
+    def get_synergy(self, champ_id_1: int, champ_id_2: int, log=False):
+        """Returns synergy between two given champ ids"""
 
-        synergy_btw_champs = cast(float, self.synergy_matrix.at[champ1, champ2])
+        if self.synergy_matrix is NoReturn:
+            return
+
+        synergy_btw_champs = cast(
+            float, self.synergy_matrix.loc[champ_id_1, champ_id_2]
+        )
 
         if log:
             self.logger.info(
-                f"Synergy between {champ1} "
-                f"and {champ2} : "
+                f"Synergy between {self.champ_id_name_map[champ_id_1]} "
+                f"and {self.champ_id_name_map[champ_id_2]} : "
                 f"{synergy_btw_champs * 100:.2f}%"
             )
 
@@ -416,9 +423,9 @@ class DatasetAnalysis:
         team_synergy = 0
         pairs = itertools.combinations(team_champs, 2)
         for c in pairs:
-            champ_name_1 = self.champ_id_name_map[c[0]]
-            champ_name_2 = self.champ_id_name_map[c[1]]
-            team_synergy += self.synergy_matrix[champ_name_1, champ_name_2]
+            champ_id_1 = c[0]
+            champ_id_2 = c[1]
+            team_synergy += cast(float, self.synergy_matrix.loc[champ_id_1, champ_id_2])
 
         team_synergy /= math.comb(len(team_champs), 2)
 
@@ -669,9 +676,10 @@ class DatasetAnalysis:
 
         synergy_matrix = np.nan_to_num(synergy_matrix, nan=0.5)
 
-        champ_names = list(self.champ_id_name_map.values())
         symetry_df = pd.DataFrame(
-            synergy_matrix, index=champ_names, columns=champ_names
+            synergy_matrix,
+            index=list(self.champ_id_to_idx_map.keys()),
+            columns=list(self.champ_id_to_idx_map.keys()),
         )
 
         if plot:

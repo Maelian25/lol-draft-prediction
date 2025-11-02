@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
         # --- Analysing data ---
         # Analysing the full dataset without patches restriction
-        full_dataset_analysis = DatasetAnalysis(df_world)
+        full_dataset_analysis = DatasetAnalysis(df_world, compute_matrices=False)
         full_dataset_analysis.get_win_rate_per_side()
         full_dataset_analysis.get_patch_distribution()
         full_dataset_analysis.get_game_duration_stats(True)
@@ -101,7 +101,9 @@ if __name__ == "__main__":
 
         # Analysing the full dataset with patches restriction
         patches = ["15.19", "15.20", "15.21"]
-        dataset_on_patch_restriction = DatasetAnalysis(df_world, patches=patches)
+        dataset_on_patch_restriction = DatasetAnalysis(
+            df_world, compute_matrices=True, patches=patches
+        )
 
         dataset_on_patch_restriction.get_win_rate_per_side()
         dataset_on_patch_restriction.get_game_duration_stats(plot=False)
@@ -132,8 +134,8 @@ if __name__ == "__main__":
         ]
 
         dataset_on_patch_restriction.get_synergy(
-            champ1=team_comp_to_analyse[0].capitalize(),
-            champ2=team_comp_to_analyse[1].capitalize(),
+            champ_id_1=team_comp_to_analyse_ids[0],
+            champ_id_2=team_comp_to_analyse_ids[1],
             log=True,
         )
         dataset_on_patch_restriction.get_team_synergy(team_comp_to_analyse_ids)
