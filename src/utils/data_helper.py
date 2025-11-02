@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Tuple
 import requests
 import time
 import logging
@@ -8,20 +8,15 @@ from datetime import datetime
 import random
 import pandas as pd
 
-from src.api_key_helper import get_api_key, wait_for_new_key
-from src.logger_config import get_logger
+from src.utils.api_key_helper import get_api_key, wait_for_new_key
+from src.utils.logger_config import get_logger
+from src.utils.champions_helper import get_champions_id_name_map
 
 # 100 requests are allowed every 2 minutes, and 20 requests per seconds
 TIME_LIMIT = 120
 REQUEST_LIMIT = 100
 
-DDRAGONVERSION = "15.20.1"
-CHAMPION_FILE_URL = (
-    f"https://ddragon.leagueoflegends.com/cdn/"
-    f"{DDRAGONVERSION}/data/en_US/champion.json"
-)
-
-logger = get_logger("Helper", "helper.log")
+logger = get_logger("Helper", "data_helper.log")
 
 
 def riot_request(url, max_retries=5):
@@ -90,13 +85,6 @@ def save_json_to_dir(data, dir, region, idx, elo):
         return None
 
 
-def convert_unix_timestamp_to_date(ts):
-    """Convert timestamp to actual date"""
-    timestamp = int(ts)
-
-    return str(datetime.fromtimestamp(timestamp))
-
-
 def shuffle_picks_order_with_weights(picks, weights=[0.5, 0.7, 0.6, 0.2, 0.2]):
     """Shuffle picks order to make data more realistic since
     there is no way to get pick order from api"""
@@ -163,8 +151,6 @@ def shuffle_picks_order_with_weights(picks, weights=[0.5, 0.7, 0.6, 0.2, 0.2]):
     return new_blue_side + new_red_side
 
 
-# Function to take a random champ and replace de -1 in bans
-# so that we dont lose too many games for no real reason
 def replace_missed_bans(bans):
     """Replace a ban in the dataset that is -1 so that there is 10 bans per game"""
     champions_id_and_name = get_champions_id_name_map()
@@ -231,52 +217,6 @@ def load_scrapped_data(save_path, regionId, elo) -> Tuple[pd.DataFrame, bool]:
         return pd.json_normalize(json_string), True
 
 
-def get_champions_id_name_map() -> Dict[int, str]:
-    """Provide mapping id to name for champions in the dataset"""
-    response = requests.get(CHAMPION_FILE_URL)
-    response.raise_for_status()
-
-    data = response.json().get("data", {})
-
-    champions_id_and_name = {
-        int(champ_info["key"]): champ_info["name"].capitalize()
-        for champ_info in data.values()
-    }
-
-    return champions_id_and_name
-
-
-def get_champions_data() -> dict:
-    response = requests.get(CHAMPION_FILE_URL)
-    response.raise_for_status()
-
-    data = response.json().get("data", {})
-
-    champ_data: dict[int, Any] = {int(v["key"]): v for _, v in data.items()}
-
-    return champ_data
-
-
-def champ_id_to_idx_map():
-    """Provide mapping btw champ id and idx"""
-    champ_id_to_idx_map = {
-        champ: idx for idx, champ in enumerate(get_champions_id_name_map().keys())
-    }
-
-    return champ_id_to_idx_map
-
-
-def champName_to_champId(champName: str):
-    """Provide corresponding id for a given name"""
-    champions_name_and_id = {k: v for v, k in get_champions_id_name_map().items()}
-    champ_id = champions_name_and_id.get(champName.capitalize())
-
-    if not champ_id:
-        return -1
-
-    return champ_id
-
-
 def replace_wrong_position(dataset: pd.DataFrame):
     """Replace positions that would be corrupted in the dataset"""
 
@@ -288,38 +228,3 @@ def replace_wrong_position(dataset: pd.DataFrame):
 
     dataset["picks"] = dataset["picks"].apply(fix_positions)
     return dataset
-
-
-def tags_one_hot_encoder(unique_tags: List[str]):
-    champ_tags_dict: Dict[int, Dict[str, int]] = {}
-
-    for champ_id, data in get_champions_data().items():
-        current_champ_tags = data["tags"]
-        champ_tags_dict[champ_id] = {}
-
-        for tag in unique_tags:
-            if tag in current_champ_tags:
-                champ_tags_dict[champ_id][f"tag_{tag}"] = 1
-            else:
-                champ_tags_dict[champ_id][f"tag_{tag}"] = 0
-
-    return champ_tags_dict
-
-
-def unique_tags():
-    unique_tags = set()
-
-    for _, data in get_champions_data().items():
-        current_champ_tags: List[str] = data["tags"]
-        unique_tags.update(current_champ_tags)
-
-    return list(unique_tags)
-
-
-def find_files(filename, search_path):
-
-    for _, _, files in os.walk(search_path):
-        if filename in files:
-            return True
-        else:
-            return False

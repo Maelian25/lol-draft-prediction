@@ -1,6 +1,5 @@
 from typing import Any, Dict, List
-from src.helper import (
-    convert_unix_timestamp_to_date,
+from src.utils.data_helper import (
     replace_missed_bans,
     riot_request,
     save_json_to_dir,
@@ -8,7 +7,8 @@ from src.helper import (
 )
 from tqdm import tqdm
 
-from src.logger_config import get_logger
+from src.utils.general_helper import convert_unix_timestamp_to_date
+from src.utils.logger_config import get_logger
 
 
 class Dataset:

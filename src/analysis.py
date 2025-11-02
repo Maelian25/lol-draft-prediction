@@ -10,17 +10,19 @@ from sklearn import preprocessing
 import torch
 import os
 
-from src.helper import (
-    champ_id_to_idx_map,
-    champName_to_champId,
-    find_files,
-    get_champions_data,
+from src.utils.data_helper import (
     get_champions_id_name_map,
     replace_wrong_position,
+)
+from src.utils.champions_helper import (
+    champ_id_to_idx_map,
+    champName_to_champId,
+    get_champions_data,
     tags_one_hot_encoder,
     unique_tags,
 )
-from src.logger_config import get_logger
+from src.utils.general_helper import find_files
+from src.utils.logger_config import get_logger
 from src.ML_models.counter_matrix_model import BTFeatureCounter
 
 
@@ -531,18 +533,6 @@ class DatasetAnalysis:
         return correlation
 
     # --- Feature generation ---
-    def _get_champion_infos(self, champ_id: int):
-
-        tags_encoded = list(self.tags_encoder[champ_id].values())
-
-        infos = list(self.champions_data[champ_id]["info"].values())
-        stats = list(self.champions_data[champ_id]["stats"].values())
-
-        # Concat all three lists
-        stats_list = infos + stats + tags_encoded
-
-        return stats_list
-
     def build_champion_features_vector(self, champ_id, pick_rate, ban_rate, win_rate):
 
         role_distribution = self.get_role_distribution(champ=champ_id)
@@ -590,8 +580,25 @@ class DatasetAnalysis:
 
     def get_team_features(self, team_champs): ...
 
-    def static_champions_embedding(self) -> dict[int, List[float]]:
+    def _get_champion_infos(self, champ_id: int):
+        """
+        Encode tags and returns every info needed in a list
+        """
 
+        tags_encoded = list(self.tags_encoder[champ_id].values())
+
+        infos = list(self.champions_data[champ_id]["info"].values())
+        stats = list(self.champions_data[champ_id]["stats"].values())
+
+        # Concat all three lists
+        stats_list = infos + stats + tags_encoded
+
+        return stats_list
+
+    def static_champions_embedding(self) -> dict[int, List[float]]:
+        """
+        Create an embedding based on the basic info of the champions
+        """
         champ_features = {
             champ_id: self._get_champion_infos(champ_id)
             for champ_id in self.champ_id_name_map.keys()

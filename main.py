@@ -6,11 +6,11 @@ import pandas as pd
 
 from src.analysis import DatasetAnalysis
 from src.dataset import Dataset
-from src.helper import (
-    champName_to_champId,
+from src.utils.champions_helper import champName_to_champId
+from src.utils.data_helper import (
     load_scrapped_data,
 )
-from src.logger_config import get_logger
+from src.utils.logger_config import get_logger
 
 logger = get_logger("Main", "main_file.log")
 
@@ -137,9 +137,6 @@ if __name__ == "__main__":
             log=True,
         )
         dataset_on_patch_restriction.get_team_synergy(team_comp_to_analyse_ids)
-
-        print("Champ embedding debut")
-        champ_embeddings = dataset_on_patch_restriction.champ_embedding_dict()
 
         logger.info("Analysis ended for the restricted dataset")
 
