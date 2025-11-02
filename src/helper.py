@@ -314,3 +314,12 @@ def unique_tags():
         unique_tags.update(current_champ_tags)
 
     return list(unique_tags)
+
+
+def find_files(filename, search_path):
+
+    for _, _, files in os.walk(search_path):
+        if filename in files:
+            return True
+        else:
+            return False

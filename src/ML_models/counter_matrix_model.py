@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 import torch
@@ -17,15 +18,19 @@ class BTFeature_Embedding_Model(nn.Module):
         super().__init__()
         self.linear = nn.Linear(input_dim, 1, bias=False)
         self.embed = nn.Embedding(num_champs, embed_dim)
-        self.scale = nn.Parameter(torch.tensor(0.5), requires_grad=True)
+        self.scale = nn.Parameter(torch.tensor(1.0), requires_grad=True)
 
     def forward(self, x_1, x_2, idx_1, idx_2):
+        """
+        Calculate first de difference of strength based on static features
+        Then proceed to calculate the difference of strength based on learnable embeds
+        """
         feat_term = self.linear(x_1 - x_2)
 
         e_1 = self.embed(idx_1)
         e_2 = self.embed(idx_2)
 
-        inter_term = (e_1 * e_2).sum(dim=1, keepdim=True)
+        inter_term = (e_1 - e_2).sum(dim=1, keepdim=True)
         logits = feat_term + self.scale * inter_term
 
         return logits
@@ -33,13 +38,11 @@ class BTFeature_Embedding_Model(nn.Module):
 
 class BTFeatureCounter:
     """
-    Bradley–Terry + Feature + Embedding model
+    Bradley–Terry training
     Helps build counter matrix
     """
 
-    def __init__(
-        self, input_dim, num_champs, embed_dim=12, scale_init=0.5, device="cpu"
-    ):
+    def __init__(self, input_dim, num_champs, embed_dim=12, device="cpu"):
         self.device = device
         self.num_champs = num_champs
         self.model = nn.Module()
@@ -48,6 +51,10 @@ class BTFeatureCounter:
         )
 
     def train(self, X_1, X_2, idx_1, idx_2, target, weight, num_epochs=1000, lr=1e-3):
+        """
+        Train small dataset (~500 duels per champ pair)
+
+        """
         X_1, X_2, idx_1, idx_2, target = [
             t.to(self.device) for t in [X_1, X_2, idx_1, idx_2, target]
         ]
@@ -65,23 +72,37 @@ class BTFeatureCounter:
             optimizer.step()
             if epoch % 100 == 0:
                 print(f"Epoch {epoch:4d} | Loss : {loss.item():.6f}")
+            if epoch % num_epochs == 0:
+                os.makedirs(
+                    os.path.join(os.getcwd(), "./models_parameter"), exist_ok=True
+                )
+                torch.save(
+                    self.model.state_dict(), "./models_parameter/BTFeature_param.pth"
+                )
 
     def counter_matrix(self, champ_features, champ_id_to_idx):
+        """
+        Evaluate model and return a dataframe containing every counter data
+        This should allow counter score calculation within a game
+        """
         self.model.eval()
         champs = list(champ_features.keys())
         n = len(champs)
-        X = torch.tensor(
+        features_dict = torch.tensor(
             np.stack([champ_features[c] for c in champs]), dtype=torch.float32
         )
-        ids = torch.tensor([champ_id_to_idx[c] for c in champs], dtype=torch.long)
+        indexes = torch.tensor([champ_id_to_idx[c] for c in champs], dtype=torch.long)
         P = np.zeros((n, n), dtype=np.float32)
         with torch.no_grad():
             for a in range(n):
-                xa = X[a : a + 1].to(self.device)
-                ida = ids[a : a + 1].to(self.device)
+                features_1 = features_dict[a : a + 1].to(self.device)
+                idx_1 = indexes[a : a + 1].to(self.device)
                 for b in range(n):
-                    xb = X[b : b + 1].to(self.device)
-                    idb = ids[b : b + 1].to(self.device)
-                    p = torch.sigmoid(self.model(xa, xb, ida, idb)).item()
+                    features_2 = features_dict[b : b + 1].to(self.device)
+                    idx_2 = indexes[b : b + 1].to(self.device)
+                    p = torch.sigmoid(
+                        self.model(features_1, features_2, idx_1, idx_2)
+                    ).item()
                     P[a, b] = p
+
         return pd.DataFrame(P, index=champs, columns=champs)

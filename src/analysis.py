@@ -8,10 +8,12 @@ import pandas as pd
 import seaborn as sns
 from sklearn import preprocessing
 import torch
+import os
 
 from src.helper import (
     champ_id_to_idx_map,
     champName_to_champId,
+    find_files,
     get_champions_data,
     get_champions_id_name_map,
     replace_wrong_position,
@@ -19,7 +21,7 @@ from src.helper import (
     unique_tags,
 )
 from src.logger_config import get_logger
-from src.models import BTFeatureCounter
+from src.ML_models.counter_matrix_model import BTFeatureCounter
 
 
 class DatasetAnalysis:
@@ -607,14 +609,12 @@ class DatasetAnalysis:
     # --- Synergy matrix computation ---
     def _compute_synergy_matrix(self, plot=False, alpha=1) -> pd.DataFrame:
         """
-        Compute synergy matrix based on winrate optimized
+        Compute synergy matrix based on winrate optimized and returns a dataframe
 
         Args:
             plot: Whether to plot or not the heatmap of the matrix
             alpha: Parameter to compute Laplace smoothing
 
-        Returns:
-            pd.Dataframe: Synergy matrix with champion names as index and columns
         """
         game_count_matrix = np.zeros(
             (self.unique_champs, self.unique_champs), dtype=np.float32
@@ -679,7 +679,9 @@ class DatasetAnalysis:
 
     # --- Counters matrix computation ---
     def _count_wins_vs(self):
-
+        """
+        Returns count of wins between 2 champs
+        """
         matrix = np.zeros((self.unique_champs, self.unique_champs), dtype=np.float32)
 
         for match in self.dataset.itertuples():
@@ -707,8 +709,10 @@ class DatasetAnalysis:
 
         return matrix
 
-    def _tuples_wins_vs(self, matrix):
-
+    def _prepare_counter_matrix_data(self, matrix):
+        """
+        Returns dict to have every data ready to train our model
+        """
         pairs_data = []
         alpha, beta = 1.0, 1.0
         for i, j in itertools.combinations(range(self.unique_champs), 2):
@@ -750,15 +754,9 @@ class DatasetAnalysis:
         Compute synergy matrix based on winrate and a small machine learning model
         to finetune values based on Bradley–Terry model
         Provide the probability of a champ to win against another
-
-        Args:
-            plot: Whether to plot or not the heatmap of the matrix
-
-        Returns:
-            pd.Dataframe: Counter matrix with champion names as index and columns
         """
         game_won_by_1_vs_2_matrix = self._count_wins_vs()
-        pairs_data_df = self._tuples_wins_vs(game_won_by_1_vs_2_matrix)
+        pairs_data_df = self._prepare_counter_matrix_data(game_won_by_1_vs_2_matrix)
         champ_features = self.static_champions_embedding()
 
         X_1 = torch.tensor(
@@ -782,9 +780,21 @@ class DatasetAnalysis:
         bt_counter = BTFeatureCounter(
             input_dim=30, num_champs=self.unique_champs, embed_dim=12, device="cpu"
         )
-        bt_counter.train(X_1, X_2, idx_1, idx_2, target, weight, num_epochs=1000)
-        P_df = bt_counter.counter_matrix(champ_features, self.champ_id_to_idx_map)
 
-        print(P_df.round(3))
+        save_dir = os.getcwd() + "/models_parameter/"
+        filename = "BTFeature_param.pth"
+
+        if find_files(filename=filename, search_path=save_dir):
+            bt_counter.model.load_state_dict(
+                torch.load(os.path.join(save_dir, filename), weights_only=True)
+            )
+            self.logger.info("Find a parameter file. Loading file...")
+        else:
+            self.logger.info("No parameter file found. Training model")
+            bt_counter.train(X_1, X_2, idx_1, idx_2, target, weight, num_epochs=1000)
+
+        P_df = bt_counter.counter_matrix(
+            champ_features, self.champ_id_to_idx_map
+        ).round(3)
 
         return P_df
