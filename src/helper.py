@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, Tuple
+from typing import Any, Dict, List, Tuple
 import requests
 import time
 import logging
@@ -252,7 +252,9 @@ def get_champions_data() -> dict:
 
     data = response.json().get("data", {})
 
-    return data
+    champ_data: dict[int, Any] = {int(v["key"]): v for _, v in data.items()}
+
+    return champ_data
 
 
 def champ_id_to_idx_map():
@@ -286,3 +288,29 @@ def replace_wrong_position(dataset: pd.DataFrame):
 
     dataset["picks"] = dataset["picks"].apply(fix_positions)
     return dataset
+
+
+def tags_one_hot_encoder(unique_tags: List[str]):
+    champ_tags_dict: Dict[int, Dict[str, int]] = {}
+
+    for champ_id, data in get_champions_data().items():
+        current_champ_tags = data["tags"]
+        champ_tags_dict[champ_id] = {}
+
+        for tag in unique_tags:
+            if tag in current_champ_tags:
+                champ_tags_dict[champ_id][f"tag_{tag}"] = 1
+            else:
+                champ_tags_dict[champ_id][f"tag_{tag}"] = 0
+
+    return champ_tags_dict
+
+
+def unique_tags():
+    unique_tags = set()
+
+    for _, data in get_champions_data().items():
+        current_champ_tags: List[str] = data["tags"]
+        unique_tags.update(current_champ_tags)
+
+    return list(unique_tags)

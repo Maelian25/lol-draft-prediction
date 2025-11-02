@@ -138,8 +138,6 @@ if __name__ == "__main__":
         )
         dataset_on_patch_restriction.get_team_synergy(team_comp_to_analyse_ids)
 
-        dataset_on_patch_restriction.get_champion_infos(champ_to_analyse)
-
         print("Champ embedding debut")
         champ_embeddings = dataset_on_patch_restriction.champ_embedding_dict()
 

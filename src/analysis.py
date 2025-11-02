@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from sklearn import preprocessing
+import torch
 
 from src.helper import (
     champ_id_to_idx_map,
@@ -13,8 +15,11 @@ from src.helper import (
     get_champions_data,
     get_champions_id_name_map,
     replace_wrong_position,
+    tags_one_hot_encoder,
+    unique_tags,
 )
 from src.logger_config import get_logger
+from src.models import BTFeatureCounter
 
 
 class DatasetAnalysis:
@@ -57,87 +62,27 @@ class DatasetAnalysis:
 
         # Calculate number of matches and unique champions
         self.num_matches = len(self.dataset)
-        self.logger.info(f"Number of games in the dataset : {self.num_matches}")
         self.unique_champs = len(self.champ_id_name_map)
 
-        # Compute synergy matrix and counter matrix once and for all
-        self.precompute_matrices()
+        # Get champions data once and for all
+        self.champions_data = get_champions_data()
 
-    def precompute_matrices(self):
+        # Get encoded tags for champions
+        self.unique_tags = unique_tags()
+        self.tags_encoder = tags_one_hot_encoder(self.unique_tags)
+
+        self.champions_info_scaler = preprocessing.MinMaxScaler()
+
+        # Compute synergy matrix and counter matrix once and for all
+        self._precompute_matrices()
+
+        exit()
+
+    def _precompute_matrices(self):
         """Compute synergy matrix and counter matrix"""
 
-        self.synergy_matrix = self.calculate_synergy_matrix()
-        # self.counter_matrix = self._calculate_counter_matrix() TODO
-
-    def calculate_synergy_matrix(self, plot=False, alpha=1) -> pd.DataFrame:
-        """
-        Compute synergy matrix based on winrate optimized
-
-        Args:
-            plot: Whether to plot or not the heatmap of the matrix
-            alpha: Parameter to compute Laplace smoothing
-
-        Returns:
-            pd.Dataframe: Synergy matrix with champion names as index and columns
-        """
-        num_champ = self.unique_champs
-
-        game_count_matrix = np.zeros((num_champ, num_champ), dtype=np.float32)
-        game_won_count_matrix = np.zeros((num_champ, num_champ), dtype=np.float32)
-
-        for match in self.dataset.itertuples():
-
-            picks = getattr(match, "picks", [])
-            if not picks:
-                continue
-
-            blue_team_champs = [
-                self.champ_id_to_idx_map[p["championId"]]
-                for p in picks
-                if p["side"] == "blue"
-            ]
-            red_team_champs = [
-                self.champ_id_to_idx_map[p["championId"]]
-                for p in picks
-                if p["side"] == "red"
-            ]
-
-            blue_team_won = getattr(match, "blue_side_win", bool)
-
-            for champs, won in [
-                (blue_team_champs, blue_team_won),
-                (red_team_champs, not blue_team_won),
-            ]:
-                team_representation = np.zeros((num_champ,), dtype=np.float32)
-                team_representation[champs] = 1.0
-
-                outer = np.outer(team_representation, team_representation)
-                np.fill_diagonal(outer, 0)
-
-                game_count_matrix += outer
-                if won:
-                    game_won_count_matrix += outer
-
-        synergy_matrix = (game_won_count_matrix + alpha) / (
-            game_count_matrix + 2 * alpha
-        )
-
-        synergy_matrix = np.nan_to_num(synergy_matrix, nan=0.5)
-
-        champ_names = list(self.champ_id_name_map.values())
-        symetry_df = pd.DataFrame(
-            synergy_matrix, index=champ_names, columns=champ_names
-        )
-
-        if plot:
-            plt.figure(figsize=(12, 10))
-            sns.heatmap(synergy_matrix, cmap="coolwarm", center=0.5)
-            plt.title("Champion Synergy Matrix (Winrate)")
-            plt.show(block=False)
-            plt.pause(2)
-            plt.close()
-
-        return symetry_df
+        self.synergy_matrix = self._compute_synergy_matrix()
+        self.counter_matrix = self._compute_counter_matrix()
 
     # --- Global stats ---
     def get_win_rate_per_side(self):
@@ -484,10 +429,7 @@ class DatasetAnalysis:
         """Provide first and last pick stats"""
         fp_rates = {"fp": defaultdict(int), "lp": defaultdict(int)}
 
-        df_patch = self.dataset[self.dataset["game_version"].isin(self.patches)]
-        num_games = len(df_patch)
-
-        for row in df_patch.itertuples():
+        for row in self.dataset.itertuples():
             for pick in getattr(row, "picks", [{}]):
                 champ_id = pick.get("championId")
                 side = pick.get("side")
@@ -517,8 +459,8 @@ class DatasetAnalysis:
             ]
         )
 
-        fp_df["first_pick_rate"] = fp_df["first_pick_count"] / num_games
-        fp_df["last_pick_rate"] = fp_df["last_pick_count"] / num_games
+        fp_df["first_pick_rate"] = fp_df["first_pick_count"] / self.num_matches
+        fp_df["last_pick_rate"] = fp_df["last_pick_count"] / self.num_matches
 
         for x in ["first_pick_rate", "last_pick_rate"]:
             fp_df = fp_df.sort_values(x, ascending=False).reset_index(drop=True)
@@ -587,21 +529,17 @@ class DatasetAnalysis:
         return correlation
 
     # --- Feature generation ---
-    def get_champion_infos(self, champ_id: int):
+    def _get_champion_infos(self, champ_id: int):
 
-        champ_data: dict[int, Any] = {
-            int(v["key"]): v for _, v in get_champions_data().items()
-        }
+        tags_encoded = list(self.tags_encoder[champ_id].values())
 
-        infos = champ_data[champ_id]["info"]
-        tags = champ_data[champ_id]["tags"]
-        stats = champ_data[champ_id]["stats"]
+        infos = list(self.champions_data[champ_id]["info"].values())
+        stats = list(self.champions_data[champ_id]["stats"].values())
 
-        champ_static_dict = (
-            infos | {"tags": ",".join(tags)} | stats
-        )  # Concat all three dicts
+        # Concat all three lists
+        stats_list = infos + stats + tags_encoded
 
-        return champ_static_dict
+        return stats_list
 
     def build_champion_features_vector(self, champ_id, pick_rate, ban_rate, win_rate):
 
@@ -622,9 +560,9 @@ class DatasetAnalysis:
             "counters_with_less_50%_win_rate": ",".join(map(str, counters.to_list())),
         }
 
-        champ_static_info = self.get_champion_infos(champ_id)
+        champ_static_info = self.static_champions_embedding()[champ_id]
 
-        features = feature_dict | champ_static_info
+        features = list(feature_dict.values()) + champ_static_info
 
         return pd.json_normalize(features)
 
@@ -649,3 +587,204 @@ class DatasetAnalysis:
         return final_df
 
     def get_team_features(self, team_champs): ...
+
+    def static_champions_embedding(self) -> dict[int, List[float]]:
+
+        champ_features = {
+            champ_id: self._get_champion_infos(champ_id)
+            for champ_id in self.champ_id_name_map.keys()
+        }
+        all_stats = np.array(list(champ_features.values()))
+        scaled_all_stats = self.champions_info_scaler.fit_transform(all_stats)
+
+        champ_features = {
+            champ_id: scaled_all_stats[i].tolist()
+            for i, champ_id in enumerate(self.champ_id_name_map.keys())
+        }
+
+        return champ_features
+
+    # --- Synergy matrix computation ---
+    def _compute_synergy_matrix(self, plot=False, alpha=1) -> pd.DataFrame:
+        """
+        Compute synergy matrix based on winrate optimized
+
+        Args:
+            plot: Whether to plot or not the heatmap of the matrix
+            alpha: Parameter to compute Laplace smoothing
+
+        Returns:
+            pd.Dataframe: Synergy matrix with champion names as index and columns
+        """
+        game_count_matrix = np.zeros(
+            (self.unique_champs, self.unique_champs), dtype=np.float32
+        )
+        game_won_count_matrix = np.zeros(
+            (self.unique_champs, self.unique_champs), dtype=np.float32
+        )
+
+        for match in self.dataset.itertuples():
+
+            picks = getattr(match, "picks", [])
+            if not picks:
+                continue
+
+            blue_team_champs = [
+                self.champ_id_to_idx_map[p["championId"]]
+                for p in picks
+                if p["side"] == "blue"
+            ]
+            red_team_champs = [
+                self.champ_id_to_idx_map[p["championId"]]
+                for p in picks
+                if p["side"] == "red"
+            ]
+
+            blue_team_won = getattr(match, "blue_side_win", bool)
+
+            for champs, won in [
+                (blue_team_champs, blue_team_won),
+                (red_team_champs, not blue_team_won),
+            ]:
+                team_representation = np.zeros((self.unique_champs,), dtype=np.float32)
+                team_representation[champs] = 1.0
+
+                outer = np.outer(team_representation, team_representation)
+                np.fill_diagonal(outer, 0)
+
+                game_count_matrix += outer
+                if won:
+                    game_won_count_matrix += outer
+
+        synergy_matrix = (game_won_count_matrix + alpha) / (
+            game_count_matrix + 2 * alpha
+        )
+
+        synergy_matrix = np.nan_to_num(synergy_matrix, nan=0.5)
+
+        champ_names = list(self.champ_id_name_map.values())
+        symetry_df = pd.DataFrame(
+            synergy_matrix, index=champ_names, columns=champ_names
+        )
+
+        if plot:
+            plt.figure(figsize=(12, 10))
+            sns.heatmap(synergy_matrix, cmap="coolwarm", center=0.5)
+            plt.title("Champion Synergy Matrix (Winrate)")
+            plt.show(block=False)
+            plt.pause(2)
+            plt.close()
+
+        return symetry_df
+
+    # --- Counters matrix computation ---
+    def _count_wins_vs(self):
+
+        matrix = np.zeros((self.unique_champs, self.unique_champs), dtype=np.float32)
+
+        for match in self.dataset.itertuples():
+            picks = getattr(match, "picks", [])
+
+            blue_team_champs = [
+                self.champ_id_to_idx_map[p["championId"]]
+                for p in picks
+                if p["side"] == "blue"
+            ]
+            red_team_champs = [
+                self.champ_id_to_idx_map[p["championId"]]
+                for p in picks
+                if p["side"] == "red"
+            ]
+
+            blue_team_won = getattr(match, "blue_side_win", False)
+
+            for i in blue_team_champs:
+                for j in red_team_champs:
+                    if blue_team_won:
+                        matrix[i, j] += 1
+                    else:
+                        matrix[j, i] += 1
+
+        return matrix
+
+    def _tuples_wins_vs(self, matrix):
+
+        pairs_data = []
+        alpha, beta = 1.0, 1.0
+        for i, j in itertools.combinations(range(self.unique_champs), 2):
+            if i != j:
+                n = matrix[i, j] + matrix[j, i]
+                smoothed_p = (matrix[i, j] + alpha) / (n + alpha + beta)
+                pairs_data.append(
+                    (
+                        i,
+                        j,
+                        self.idx_to_champ_id_map[i],
+                        self.idx_to_champ_id_map[j],
+                        matrix[i, j],
+                        matrix[j, i],
+                        smoothed_p,
+                        np.sqrt(n),
+                    )
+                )
+
+        df = pd.DataFrame(
+            pairs_data,
+            columns=[
+                "champ_idx_1",
+                "champ_idx_2",
+                "champ_id_1",
+                "champ_id_2",
+                "wins_1_vs_2",
+                "wins_2_vs_1",
+                "target",
+                "weight",
+            ],
+        )
+        df["weight"] /= df["weight"].mean()
+
+        return df
+
+    def _compute_counter_matrix(self, plot=False):
+        """
+        Compute synergy matrix based on winrate and a small machine learning model
+        to finetune values based on Bradley–Terry model
+        Provide the probability of a champ to win against another
+
+        Args:
+            plot: Whether to plot or not the heatmap of the matrix
+
+        Returns:
+            pd.Dataframe: Counter matrix with champion names as index and columns
+        """
+        game_won_by_1_vs_2_matrix = self._count_wins_vs()
+        pairs_data_df = self._tuples_wins_vs(game_won_by_1_vs_2_matrix)
+        champ_features = self.static_champions_embedding()
+
+        X_1 = torch.tensor(
+            np.stack(
+                [champ_features[r["champ_id_1"]] for _, r in pairs_data_df.iterrows()]
+            ),
+            dtype=torch.float32,
+        )
+        X_2 = torch.tensor(
+            np.stack(
+                [champ_features[r["champ_id_2"]] for _, r in pairs_data_df.iterrows()]
+            ),
+            dtype=torch.float32,
+        )
+        idx_1 = torch.tensor(pairs_data_df["champ_idx_1"].values, dtype=torch.long)
+        idx_2 = torch.tensor(pairs_data_df["champ_idx_2"].values, dtype=torch.long)
+
+        target = torch.tensor(pairs_data_df["target"].values, dtype=torch.float32)
+        weight = torch.tensor(pairs_data_df["weight"].values, dtype=torch.float32)
+
+        bt_counter = BTFeatureCounter(
+            input_dim=30, num_champs=self.unique_champs, embed_dim=12, device="cpu"
+        )
+        bt_counter.train(X_1, X_2, idx_1, idx_2, target, weight, num_epochs=1000)
+        P_df = bt_counter.counter_matrix(champ_features, self.champ_id_to_idx_map)
+
+        print(P_df.round(3))
+
+        return P_df
