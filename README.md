@@ -71,17 +71,21 @@ lol-draft-prediction/
 |   └── helper.py               # API request utilities and helper functions
 │
 ├── datasets/               # Collected match data (JSON files)
-│   └── REGION_picks_and_bans_YYYYMMDD_HHMMSS.json
+│   └── REGION (EU, KR, US)
+│     └── REGION_elo_picks_and_bans_YYYYMMDD_HHMMSS.json
 │
 ├── logs/                   # Log files
 │   └── data_scrapping.log
 │
-├── models/                 # Trained ML models (future)
+├── ML_models/                 # Trained ML models (future)
+├── utils/                 # Helpers
 │
 ├── requirements.txt           # Python dependencies
 ├── .gitignore                 # Git ignore file
 ├── pyproject.toml             # Formatter config
 ├── .pre-commit-config.yaml    # Pre-commit config
+├── .flake8                    # Flake8 config (Linter)
+├── setup.cfg                  # Black config (Formatter)
 └── README.md                  # This file
 ```
 
