@@ -751,7 +751,7 @@ class DatasetAnalysis:
 
         return df
 
-    def static_champions_embedding(self) -> dict[int, List[float]]:
+    def _static_champions_embedding(self) -> dict[int, List[float]]:
         """
         Create an embedding based on the basic infos of the champions
         Passing this object through model to defin counter_matrix
