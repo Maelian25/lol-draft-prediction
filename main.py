@@ -143,7 +143,7 @@ if __name__ == "__main__":
         )
         dataset_on_patch_restriction.get_team_synergy(team_comp_to_analyse_ids)
 
-        champ_embeddings = dataset_on_patch_restriction.champions_embeddings()
+        champ_embeddings = dataset_on_patch_restriction.champion_embeddings()
 
         ahri = "Ahri"
         syndra = "Syndra"

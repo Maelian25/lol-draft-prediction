@@ -552,7 +552,7 @@ class DatasetAnalysis:
         return correlation
 
     # --- Feature generation ---
-    def champions_embeddings(self):
+    def champion_embeddings(self):
 
         win_rate = self.get_champ_win_rate()
         pick_rate = self.get_champ_pick_or_ban_rate(pick=True)
@@ -586,7 +586,7 @@ class DatasetAnalysis:
         }
 
         champ_embeddings_df = pd.DataFrame(champ_embeddings).T
-        champ_embeddings_df.to_json("champions_vector.json")
+        champ_embeddings_df.to_json("champion_embeddings.json")
 
         return champ_embeddings_df
 
