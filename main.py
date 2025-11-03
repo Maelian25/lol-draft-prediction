@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 from typing import List
 
+import numpy as np
 import pandas as pd
 
 from src.analysis import DatasetAnalysis
@@ -11,6 +12,8 @@ from src.utils.data_helper import (
     load_scrapped_data,
 )
 from src.utils.logger_config import get_logger
+
+from sklearn.metrics.pairwise import cosine_similarity
 
 logger = get_logger("Main", "main_file.log")
 
@@ -139,6 +142,27 @@ if __name__ == "__main__":
             log=True,
         )
         dataset_on_patch_restriction.get_team_synergy(team_comp_to_analyse_ids)
+
+        champ_embeddings = dataset_on_patch_restriction.champions_embeddings()
+
+        ahri = "Ahri"
+        syndra = "Syndra"
+        malphite = "Malphite"
+
+        cos_sim_1 = cosine_similarity(
+            np.array(champ_embeddings.loc[champName_to_champId(ahri)]).reshape(1, -1),
+            np.array(champ_embeddings.loc[champName_to_champId(syndra)]).reshape(1, -1),
+        )
+
+        cos_sim_2 = cosine_similarity(
+            np.array(champ_embeddings.loc[champName_to_champId(ahri)]).reshape(1, -1),
+            np.array(champ_embeddings.loc[champName_to_champId(malphite)]).reshape(
+                1, -1
+            ),
+        )
+
+        logger.info(f"Similarity btw {ahri} and {syndra} : {cos_sim_1[0][0]:.2f}")
+        logger.info(f"Similarity btw {ahri} and {malphite} : {cos_sim_2[0][0]:.2f}")
 
         logger.info("Analysis ended for the restricted dataset")
 

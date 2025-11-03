@@ -25,6 +25,8 @@ from src.utils.general_helper import find_files
 from src.utils.logger_config import get_logger
 from src.ML_models.counter_matrix_model import BTFeatureCounter
 
+ROLE_MAP = {"TOP": 1, "JUNGLE": 2, "MIDDLE": 3, "BOTTOM": 4, "SUPPORT": 5}
+
 
 class DatasetAnalysis:
     """Enables analysis on a given dataset"""
@@ -78,7 +80,7 @@ class DatasetAnalysis:
         self.unique_tags = unique_tags()
         self.tags_encoder = tags_one_hot_encoder(self.unique_tags)
 
-        self.champions_info_scaler = preprocessing.MinMaxScaler()
+        self.champions_info_scaler = preprocessing.StandardScaler()
 
         # Compute synergy matrix and counter matrix once and for all
         if compute_matrices:
@@ -225,9 +227,10 @@ class DatasetAnalysis:
             pd.DataFrame(data)
             .sort_values("win_rate", ascending=False)
             .reset_index(drop=True)
+            .set_index("championId")
         )
 
-        return df_result
+        return df_result["win_rate"]
 
     def get_champ_pick_or_ban_rate(self, pick: bool, plot=False):
         """Provide champ pick or ban rate"""
@@ -313,7 +316,16 @@ class DatasetAnalysis:
             plt.pause(2)
             plt.close()
 
-        return df_champ_role
+        df_champ_role.rename(index=ROLE_MAP).sort_index()
+
+        role_distribution_percentage = list(
+            map(
+                lambda x: x / sum(list(df_champ_role[champ_id])),
+                list(df_champ_role[champ_id]),
+            )
+        )
+
+        return role_distribution_percentage
 
     # --- Matchup / synergy ---
     def get_counters(self, champ, plot):
@@ -540,50 +552,43 @@ class DatasetAnalysis:
         return correlation
 
     # --- Feature generation ---
-    def build_champion_features_vector(self, champ_id, pick_rate, ban_rate, win_rate):
+    def champions_embeddings(self):
 
-        role_distribution = self.get_role_distribution(champ=champ_id)
-
-        champ_counters = self.get_counters(champ_id, plot=False).loc[champ_id]
-        counters = champ_counters[champ_counters < 0.5].dropna().index.sort_values()
-
-        feature_dict = {
-            "champ_id": champ_id,
-            "pick_rate": pick_rate[champ_id],
-            "ban_rate": ban_rate[champ_id],
-            "win_rate": float(
-                win_rate.loc[self.champ_id_to_idx_map[champ_id]]["win_rate"].item()
-            ),
-            "role_most_played": role_distribution.idxmax().iloc[0],
-            "biggest_counter": int(counters[0]),
-            "counters_with_less_50%_win_rate": ",".join(map(str, counters.to_list())),
-        }
-
-        champ_static_info = self.static_champions_embedding()[champ_id]
-
-        features = list(feature_dict.values()) + champ_static_info
-
-        return pd.json_normalize(features)
-
-    def champ_embedding_dict(self):
-
+        win_rate = self.get_champ_win_rate()
         pick_rate = self.get_champ_pick_or_ban_rate(pick=True)
         ban_rate = self.get_champ_pick_or_ban_rate(pick=False)
-        win_rate = self.get_champ_win_rate()
 
-        champ_embeddings = []
-        for champ_id, _ in self.champ_id_name_map.items():
-
-            df = self.build_champion_features_vector(
-                champ_id, pick_rate=pick_rate, ban_rate=ban_rate, win_rate=win_rate
+        champ_embeddings = {
+            champ_id: np.concatenate(
+                [
+                    self._get_champion_infos(champ_id),
+                    np.array(
+                        [win_rate[champ_id], pick_rate[champ_id], ban_rate[champ_id]]
+                    ),
+                    self.get_role_distribution(champ_id),
+                    np.array(
+                        [
+                            self.counter_matrix[champ_id].mean(),
+                            self.synergy_matrix[champ_id].mean(),
+                        ]
+                    ),
+                ]
             )
-            champ_embeddings.append(df)
+            for champ_id in self.champ_id_name_map.keys()
+        }
 
-        final_df = pd.concat(champ_embeddings, ignore_index=True)
+        all_stats = np.vstack(list(champ_embeddings.values()))
+        scaled_all_stats = self.champions_info_scaler.fit_transform(all_stats)
 
-        final_df.to_json("champions_vector.json")
+        champ_embeddings = {
+            champ_id: scaled_all_stats[i].tolist()
+            for i, champ_id in enumerate(self.champ_id_name_map.keys())
+        }
 
-        return final_df
+        champ_embeddings_df = pd.DataFrame(champ_embeddings).T
+        champ_embeddings_df.to_json("champions_vector.json")
+
+        return champ_embeddings_df
 
     def get_team_features(self, team_champs): ...
 
@@ -601,24 +606,6 @@ class DatasetAnalysis:
         stats_list = infos + stats + tags_encoded
 
         return stats_list
-
-    def static_champions_embedding(self) -> dict[int, List[float]]:
-        """
-        Create an embedding based on the basic info of the champions
-        """
-        champ_features = {
-            champ_id: self._get_champion_infos(champ_id)
-            for champ_id in self.champ_id_name_map.keys()
-        }
-        all_stats = np.array(list(champ_features.values()))
-        scaled_all_stats = self.champions_info_scaler.fit_transform(all_stats)
-
-        champ_features = {
-            champ_id: scaled_all_stats[i].tolist()
-            for i, champ_id in enumerate(self.champ_id_name_map.keys())
-        }
-
-        return champ_features
 
     # --- Synergy matrix computation ---
     def _compute_synergy_matrix(self, plot=False, alpha=1) -> pd.DataFrame:
@@ -763,6 +750,27 @@ class DatasetAnalysis:
         df["weight"] /= df["weight"].mean()
 
         return df
+
+    def static_champions_embedding(self) -> dict[int, List[float]]:
+        """
+        Create an embedding based on the basic infos of the champions
+        Passing this object through model to defin counter_matrix
+        """
+
+        champ_features = {
+            champ_id: self._get_champion_infos(champ_id)
+            for champ_id in self.champ_id_name_map.keys()
+        }
+
+        all_stats = np.vstack(list(champ_features.values()))
+        scaled_all_stats = self.champions_info_scaler.fit_transform(all_stats)
+
+        champ_features = {
+            champ_id: scaled_all_stats[i].tolist()
+            for i, champ_id in enumerate(self.champ_id_name_map.keys())
+        }
+
+        return champ_features
 
     def _compute_counter_matrix(self, plot=False):
         """
