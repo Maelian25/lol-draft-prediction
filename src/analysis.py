@@ -780,7 +780,7 @@ class DatasetAnalysis:
         """
         game_won_by_1_vs_2_matrix = self._count_wins_vs()
         pairs_data_df = self._prepare_counter_matrix_data(game_won_by_1_vs_2_matrix)
-        champ_features = self.static_champions_embedding()
+        champ_features = self._static_champions_embedding()
 
         X_1 = torch.tensor(
             np.stack(
