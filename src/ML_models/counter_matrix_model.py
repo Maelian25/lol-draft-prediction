@@ -14,23 +14,25 @@ class BTFeature_Embedding_Model(nn.Module):
     Helps build counter matrix
     """
 
-    def __init__(self, input_dim, num_champs, embed_dim=8):
+    def __init__(self, input_dim, num_champs, embed_dim=16):
         super().__init__()
-        self.linear = nn.Linear(input_dim, 1, bias=False)
+        self.feat_mlp = nn.Sequential(
+            nn.Linear(input_dim, 64), nn.ReLU(), nn.Linear(64, 1)
+        )
         self.embed = nn.Embedding(num_champs, embed_dim)
-        self.scale = nn.Parameter(torch.tensor(1.0), requires_grad=True)
+        self.scale = nn.Parameter(torch.tensor(0.1))
 
     def forward(self, x_1, x_2, idx_1, idx_2):
         """
-        Calculate first de difference of strength based on static features
+        Calculate first the difference of strength based on static features
         Then proceed to calculate the difference of strength based on learnable embeds
         """
-        feat_term = self.linear(x_1 - x_2)
+        feat_term = self.feat_mlp(x_1 - x_2)
 
         e_1 = self.embed(idx_1)
         e_2 = self.embed(idx_2)
 
-        inter_term = (e_1 - e_2).sum(dim=1, keepdim=True)
+        inter_term = (e_1 * e_2).sum(dim=1, keepdim=True)
         logits = feat_term + self.scale * inter_term
 
         return logits
@@ -42,7 +44,7 @@ class BTFeatureCounter:
     Helps build counter matrix
     """
 
-    def __init__(self, input_dim, num_champs, embed_dim=12, device="cpu"):
+    def __init__(self, input_dim, num_champs, embed_dim=16, device="cpu"):
         self.device = device
         self.num_champs = num_champs
         self.model = nn.Module()
@@ -55,10 +57,9 @@ class BTFeatureCounter:
         Train small dataset (~500 duels per champ pair)
 
         """
-        X_1, X_2, idx_1, idx_2, target = [
-            t.to(self.device) for t in [X_1, X_2, idx_1, idx_2, target]
+        X_1, X_2, idx_1, idx_2, target, weight = [
+            t.to(self.device) for t in [X_1, X_2, idx_1, idx_2, target, weight]
         ]
-        weight = weight.to(self.device)
 
         optimizer = optim.AdamW(self.model.parameters(), lr=lr, weight_decay=1e-4)
         loss_fn = nn.BCEWithLogitsLoss(weight=weight)
@@ -66,7 +67,7 @@ class BTFeatureCounter:
         for epoch in range(1, num_epochs + 1):
             self.model.train()
             optimizer.zero_grad()
-            logits = torch.clamp(self.model(X_1, X_2, idx_1, idx_2).view(-1), -20, 20)
+            logits = self.model(X_1, X_2, idx_1, idx_2).view(-1)
             loss = loss_fn(logits, target)
             loss.backward()
             optimizer.step()

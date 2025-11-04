@@ -125,7 +125,7 @@ if __name__ == "__main__":
         # Analysing a champion as an example on chosen patches
         champ_to_analyse = champName_to_champId("kai'sa")
         dataset_on_patch_restriction.get_role_distribution(champ=champ_to_analyse)
-        all_counters = dataset_on_patch_restriction.get_counters(
+        all_counters = dataset_on_patch_restriction.top_10_matchups_for(
             champ_to_analyse, plot=True
         )
         logger.info(f"Pick rate for Kai'Sa: {pick_rate[champ_to_analyse] * 100:.2f}%")

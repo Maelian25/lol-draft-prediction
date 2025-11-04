@@ -328,88 +328,38 @@ class DatasetAnalysis:
         return role_distribution_percentage
 
     # --- Matchup / synergy ---
-    def get_counters(self, champ, plot):
-        counter_map: dict[int, dict[int, dict[str, int]]] = defaultdict(dict)
-        # {champ : {counter_pick : {games_played_versus, game_won_versus}
-        for row in self.dataset.itertuples():
-            picks = getattr(row, "picks", [{}])
+    def top_10_matchups_for(self, champ_id, plot=False):
 
-            blue_side_picks = [pick for pick in picks if pick["side"] == "blue"]
-            red_side_picks = [pick for pick in picks if pick["side"] == "red"]
+        counter_map = self.counter_matrix
+        top_counters = {}
 
-            blue_side_win = True if getattr(row, "blue_side_win", bool) else False
+        champ_id_counters = dict(counter_map.loc[champ_id])
+        del champ_id_counters[champ_id]
 
-            for pick in picks:
+        sorted_counters = sorted(champ_id_counters.items(), key=lambda x: x[1])
 
-                champ_id = pick["championId"]
-                pick_position = pick["position"]
-                pick_side = pick["side"]
-                counter_pick = -1
-                won = 0
-
-                if pick_side == "blue":
-                    if blue_side_win:
-                        won = 1
-                    for x in red_side_picks:
-                        if x["position"] == pick_position:
-                            counter_pick = x["championId"]
-                else:
-                    if not blue_side_win:
-                        won = 1
-                    for x in blue_side_picks:
-                        if x["position"] == pick_position:
-                            counter_pick = x["championId"]
-
-                counter_map[champ_id][counter_pick] = {
-                    "games_played": counter_map[champ_id]
-                    .get(counter_pick, {})
-                    .get("games_played", 0)
-                    + 1,
-                    "games_won_against": counter_map[champ_id]
-                    .get(counter_pick, {})
-                    .get("games_won_against", 0)
-                    + won,
-                }
         if plot:
-            top_counters = {}
+            champ_name = self.champ_id_name_map[champ_id]
+            self.logger.info(f"Top 10 hardest 1v1 for {champ_name}:")
 
-            for champ_id, counter_data in counter_map.items():
+            for label, matchup_list in [
+                (
+                    f"Top 10 hardest 1v1 for {champ_name}:",
+                    sorted(sorted_counters[:10], key=lambda x: x[1]),
+                ),
+                (
+                    f"Top 10 easiest 1v1 for {champ_name}:",
+                    sorted(sorted_counters[-10:], key=lambda x: x[1], reverse=True),
+                ),
+            ]:
+                self.logger.info(label)
+                for counter_id, win_rate in matchup_list:
+                    counter_name = self.champ_id_name_map[counter_id]
+                    self.logger.info(
+                        f"  vs {counter_name} : {win_rate*100:.1f}% win rate"
+                    )
 
-                sorted_counter = sorted(
-                    counter_data.items(),
-                    key=lambda x: x[1]["games_played"],
-                    reverse=True,
-                )
-
-                top_counters[champ_id] = sorted(
-                    sorted_counter[: int(len(sorted_counter) * 0.2)],
-                    key=lambda x: x[1]["games_won_against"] / x[1]["games_played"],
-                )
-
-            champ_name = self.champ_id_name_map[champ]
-            self.logger.info(f"Top 20% counters for {champ_name}:")
-            for opp_id, stats in top_counters[champ]:
-                opp_name = self.champ_id_name_map[opp_id]
-                self.logger.info(
-                    f"  vs {opp_name}: {stats['games_played']} games, "
-                    f"{stats['games_won_against']} wins, "
-                    f"{stats['games_won_against']/stats['games_played'] * 100:.2f}% "
-                    "win rate"
-                )
-
-        new_counter_map: dict[int, dict[int, float]] = defaultdict(dict)
-        for champ_id, counter_data in counter_map.items():
-
-            for counter_id, stats in counter_data.items():
-                new_counter_map[champ_id][counter_id] = (
-                    float(stats["games_won_against"] / stats["games_played"])
-                    if stats["games_played"] > 0
-                    else 0
-                )
-
-        return pd.DataFrame(new_counter_map)
-
-        return pd.DataFrame(new_counter_map)
+        return pd.DataFrame(top_counters)
 
     def get_synergy(self, champ_id_1: int, champ_id_2: int, log=False):
         """Returns synergy between two given champ ids"""
@@ -801,7 +751,7 @@ class DatasetAnalysis:
         weight = torch.tensor(pairs_data_df["weight"].values, dtype=torch.float32)
 
         bt_counter = BTFeatureCounter(
-            input_dim=30, num_champs=self.unique_champs, embed_dim=12, device="cpu"
+            input_dim=30, num_champs=self.unique_champs, embed_dim=32, device="cpu"
         )
 
         save_dir = os.getcwd() + "/models_parameter/"
@@ -814,7 +764,9 @@ class DatasetAnalysis:
             self.logger.info("Find a parameter file. Loading file...")
         else:
             self.logger.info("No parameter file found. Training model")
-            bt_counter.train(X_1, X_2, idx_1, idx_2, target, weight, num_epochs=1000)
+            bt_counter.train(
+                X_1, X_2, idx_1, idx_2, target, weight, num_epochs=1000, lr=1e-3
+            )
 
         P_df = bt_counter.counter_matrix(
             champ_features, self.champ_id_to_idx_map
