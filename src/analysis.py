@@ -670,16 +670,14 @@ class DatasetAnalysis:
         for i, j in itertools.combinations(range(self.unique_champs), 2):
             if i != j:
                 n = matrix[i, j] + matrix[j, i]
-                smoothed_p = (matrix[i, j] + alpha) / (n + alpha + beta)
+                smoothed_wr = (matrix[i, j] + alpha) / (n + alpha + beta)
                 pairs_data.append(
                     (
                         i,
                         j,
                         self.idx_to_champ_id_map[i],
                         self.idx_to_champ_id_map[j],
-                        matrix[i, j],
-                        matrix[j, i],
-                        smoothed_p,
+                        smoothed_wr,
                         n,
                     )
                 )
@@ -691,8 +689,6 @@ class DatasetAnalysis:
                 "champ_idx_2",
                 "champ_id_1",
                 "champ_id_2",
-                "wins_1_vs_2",
-                "wins_2_vs_1",
                 "target",
                 "weight",
             ],
