@@ -680,7 +680,7 @@ class DatasetAnalysis:
                         matrix[i, j],
                         matrix[j, i],
                         smoothed_p,
-                        np.sqrt(n),
+                        n,
                     )
                 )
 
@@ -765,7 +765,7 @@ class DatasetAnalysis:
         else:
             self.logger.info("No parameter file found. Training model")
             bt_counter.train(
-                X_1, X_2, idx_1, idx_2, target, weight, num_epochs=1000, lr=1e-3
+                X_1, X_2, idx_1, idx_2, target, weight, num_epochs=1500, lr=1e-3
             )
 
         P_df = bt_counter.counter_matrix(
