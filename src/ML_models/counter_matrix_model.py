@@ -17,9 +17,15 @@ class BTFeature_Embedding_Model(nn.Module):
     def __init__(self, input_dim, num_champs, embed_dim=16):
         super().__init__()
         self.feat_mlp = nn.Sequential(
-            nn.Linear(input_dim, 64), nn.ReLU(), nn.Linear(64, 1)
+            nn.Linear(input_dim * 2, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1),
         )
+
         self.embed = nn.Embedding(num_champs, embed_dim)
+        self.embed_bias = nn.Embedding(num_champs, embed_dim)
         self.scale = nn.Parameter(torch.tensor(0.1))
 
     def forward(self, x_1, x_2, idx_1, idx_2):
@@ -27,13 +33,22 @@ class BTFeature_Embedding_Model(nn.Module):
         Calculate first the difference of strength based on static features
         Then proceed to calculate the difference of strength based on learnable embeds
         """
-        feat_term = self.feat_mlp(x_1 - x_2)
+
+        scale = torch.clamp(self.scale, 0.01, 2.0)
+
+        x_diff = x_1 - x_2
+        x_mult = x_1 * x_2
+        feat_input = torch.cat([x_diff, x_mult], dim=1)
+        feat_term = self.feat_mlp(feat_input)
 
         e_1 = self.embed(idx_1)
         e_2 = self.embed(idx_2)
 
-        inter_term = (e_1 * e_2).sum(dim=1, keepdim=True)
-        logits = feat_term + self.scale * inter_term
+        b_1 = self.embed_bias(idx_1)
+        b_2 = self.embed_bias(idx_2)
+
+        inter_term = (e_1 * (e_2 + b_1 - b_2)).sum(dim=1, keepdim=True)
+        logits = feat_term + scale * inter_term
 
         return logits
 

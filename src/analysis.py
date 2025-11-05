@@ -340,7 +340,6 @@ class DatasetAnalysis:
 
         if plot:
             champ_name = self.champ_id_name_map[champ_id]
-            self.logger.info(f"Top 10 hardest 1v1 for {champ_name}:")
 
             for label, matchup_list in [
                 (
@@ -356,7 +355,7 @@ class DatasetAnalysis:
                 for counter_id, win_rate in matchup_list:
                     counter_name = self.champ_id_name_map[counter_id]
                     self.logger.info(
-                        f"  vs {counter_name} : {win_rate*100:.1f}% win rate"
+                        f"  vs {counter_name} : {win_rate*100:.2f}% win rate"
                     )
 
         return pd.DataFrame(top_counters)
@@ -761,7 +760,7 @@ class DatasetAnalysis:
         else:
             self.logger.info("No parameter file found. Training model")
             bt_counter.train(
-                X_1, X_2, idx_1, idx_2, target, weight, num_epochs=1500, lr=1e-3
+                X_1, X_2, idx_1, idx_2, target, weight, num_epochs=2500, lr=3e-3
             )
 
         P_df = bt_counter.counter_matrix(
