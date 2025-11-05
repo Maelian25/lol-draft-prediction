@@ -692,7 +692,6 @@ class DatasetAnalysis:
                 "weight",
             ],
         )
-        df["weight"] /= df["weight"].mean()
 
         return df
 
@@ -744,6 +743,8 @@ class DatasetAnalysis:
 
         target = torch.tensor(pairs_data_df["target"].values, dtype=torch.float32)
         weight = torch.tensor(pairs_data_df["weight"].values, dtype=torch.float32)
+        weight = torch.clamp(torch.sqrt(weight), 0.01, 50)
+        weight = weight / weight.mean()
 
         bt_counter = BTFeatureCounter(
             input_dim=30, num_champs=self.unique_champs, embed_dim=32, device="cpu"
