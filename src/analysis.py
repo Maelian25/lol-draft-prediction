@@ -73,6 +73,8 @@ class DatasetAnalysis:
         self.num_matches = len(self.dataset)
         self.unique_champs = len(self.champ_id_name_map)
 
+        self.prepare_matches_for_ml()
+
         # Get champions data once and for all
         self.champions_data = get_champions_data()
 
@@ -535,7 +537,7 @@ class DatasetAnalysis:
         }
 
         champ_embeddings_df = pd.DataFrame(champ_embeddings).T
-        champ_embeddings_df.to_json("champion_embeddings.json")
+        champ_embeddings_df.to_json("./data_representation/champion_embeddings.json")
 
         return champ_embeddings_df
 
@@ -769,3 +771,141 @@ class DatasetAnalysis:
         ).round(3)
 
         return P_df
+
+    def prepare_matches_for_ml(self):
+
+        matches_info = list(dict())
+
+        # 1 blue ban - 1 red ban - 1 blue ban - 1 red ban - 1 blue ban - 1 red ban
+        # 1 blue pick - 2 red picks - 2 blue picks - 1 red pick
+        # 1 ban red, 1 ban blue - 1 ban red - 1 ban blue
+        # 1 pick red -e 2 pick blue - 1 pick red
+        drafting_phase: dict[str, list[dict[str, int]]] = {
+            "ban_phase_1": [
+                {"blue": 0},
+                {"red": 0},
+                {"blue": 1},
+                {"red": 1},
+                {"blue": 2},
+                {"red": 2},
+            ],
+            "pick_phase_1": [
+                {"blue": 0},
+                {"red": 0},
+                {"red": 1},
+                {"blue": 1},
+                {"blue": 2},
+                {"red": 2},
+            ],
+            "ban_phase_2": [
+                {"red": 3},
+                {"blue": 3},
+                {"red": 4},
+                {"blue": 4},
+            ],
+            "pick_phase_2": [
+                {"red": 3},
+                {"blue": 3},
+                {"blue": 4},
+                {"red": 4},
+            ],
+            "pick_final": [{"-": 0}],
+        }
+
+        for match in self.dataset.itertuples():
+
+            match_id = getattr(match, "match_id")
+            picks = getattr(match, "picks")
+            bans = getattr(match, "bans")
+            blue_side_win = getattr(match, "blue_side_win")
+
+            blue_bans = []  # at a given time
+            blue_picks = []  # at a given time
+            red_bans = []  # at a given time
+            red_picks = []  # at a given time
+            blue_roles = [0] * 5
+            red_roles = [0] * 5
+            step = 0
+            availability_mask = [0] * self.unique_champs
+
+            for phase, phase_order in drafting_phase.items():
+                phase_type = phase.split("_")[0]
+
+                for side in phase_order:
+
+                    key = list(side.keys())[0]
+                    val = list(side.values())[0]
+
+                    if phase_type == "ban":
+                        if key == "blue":
+                            target = bans[val]["championId"]
+                        else:
+                            target = bans[val + 5]["championId"]
+                    else:
+                        if key == "blue":
+                            target = picks[val]["championId"]
+                        else:
+                            target = picks[val + 5]["championId"]
+
+                    matches_info.append(
+                        {
+                            "match_id": match_id,
+                            "step": step,
+                            "blue_picks": blue_picks.copy(),
+                            "red_picks": red_picks.copy(),
+                            "blue_bans": blue_bans.copy(),
+                            "red_bans": red_bans.copy(),
+                            "blue_roles_filled": blue_roles.copy(),
+                            "red_roles_filled": red_roles.copy(),
+                            "availability": availability_mask.copy(),
+                            "synergy_score": 0,
+                            "counter_score": 0,
+                            "action_to_do": phase_type,
+                            "side_doing_action": key,
+                            "target(next pick/ban)": target,
+                            "winning_side": "blue" if blue_side_win else "red",
+                        }
+                    )
+
+                    step += 1
+                    # Ban phases
+                    if phase_type == "ban":
+                        if key == "blue":
+                            blue_bans.append(bans[val]["championId"])
+                            availability_mask[
+                                self.champ_id_to_idx_map[bans[val]["championId"]]
+                            ] = 1
+                        else:
+                            red_bans.append(bans[val + 5]["championId"])
+                            availability_mask[
+                                self.champ_id_to_idx_map[bans[val + 5]["championId"]]
+                            ] = 1
+                    # Pick phases
+                    else:
+                        if key == "red":
+                            pick_info = picks[val + 5]
+
+                            red_roles[ROLE_MAP[pick_info["position"]] - 1] = 1
+                            red_picks.append(pick_info["championId"])
+
+                            availability_mask[
+                                self.champ_id_to_idx_map[pick_info["championId"]]
+                            ] = 1
+                        else:
+                            pick_info = picks[val]
+
+                            blue_roles[ROLE_MAP[pick_info["position"]] - 1] = 1
+                            blue_picks.append(pick_info["championId"])
+
+                            availability_mask[
+                                self.champ_id_to_idx_map[pick_info["championId"]]
+                            ] = 1
+
+                print(f"fin de la phase {phase}, step : {step}")
+                print("Match infos : ")
+                print(pd.DataFrame(matches_info).head(21))
+                pd.DataFrame(matches_info).to_csv(
+                    "./data_representation/game_states.csv"
+                )
+
+            exit()
