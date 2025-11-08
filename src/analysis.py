@@ -879,7 +879,7 @@ class DatasetAnalysis:
                             availability_mask[
                                 self.champ_id_to_idx_map[bans[val]["championId"]]
                             ] = 1
-                        elif key == "blue":
+                        elif key == "red":
                             red_bans.append(bans[val + 5]["championId"])
                             availability_mask[
                                 self.champ_id_to_idx_map[bans[val + 5]["championId"]]
@@ -895,7 +895,7 @@ class DatasetAnalysis:
                             availability_mask[
                                 self.champ_id_to_idx_map[pick_info["championId"]]
                             ] = 1
-                        elif key == "red":
+                        elif key == "blue":
                             pick_info = picks[val]
 
                             blue_roles[ROLE_MAP[pick_info["position"]] - 1] = 1
