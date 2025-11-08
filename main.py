@@ -141,7 +141,7 @@ if __name__ == "__main__":
             champ_id_2=team_comp_to_analyse_ids[1],
             log=True,
         )
-        dataset_on_patch_restriction.get_team_synergy(team_comp_to_analyse_ids)
+        dataset_on_patch_restriction.team_synergy_score(team_comp_to_analyse_ids)
 
         champ_embeddings = dataset_on_patch_restriction.champion_embeddings()
 
@@ -150,13 +150,19 @@ if __name__ == "__main__":
         malphite = "Malphite"
 
         cos_sim_1 = cosine_similarity(
-            np.array(champ_embeddings.loc[champName_to_champId(ahri)]).reshape(1, -1),
-            np.array(champ_embeddings.loc[champName_to_champId(syndra)]).reshape(1, -1),
+            np.array(champ_embeddings[champName_to_champId(ahri)].values).reshape(
+                1, -1
+            ),
+            np.array(champ_embeddings[champName_to_champId(syndra)].values).reshape(
+                1, -1
+            ),
         )
 
         cos_sim_2 = cosine_similarity(
-            np.array(champ_embeddings.loc[champName_to_champId(ahri)]).reshape(1, -1),
-            np.array(champ_embeddings.loc[champName_to_champId(malphite)]).reshape(
+            np.array(champ_embeddings[champName_to_champId(ahri)].values).reshape(
+                1, -1
+            ),
+            np.array(champ_embeddings[champName_to_champId(malphite)].values).reshape(
                 1, -1
             ),
         )

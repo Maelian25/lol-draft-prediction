@@ -86,15 +86,37 @@ class DatasetAnalysis:
         # Compute synergy matrix and counter matrix once and for all
         if compute_matrices:
             self._precompute_matrices()
+            self._precompute_champion_embeddings()
 
         if build_matches_for_ml:
+            self.logger.info("Sarting building match states")
             self.prepare_matches_for_ml()
+            self.logger.info("Finished building match states")
 
     def _precompute_matrices(self):
         """Compute synergy matrix and counter matrix"""
 
         self.synergy_matrix = self._compute_synergy_matrix()
         self.counter_matrix = self._compute_counter_matrix()
+        self.logger.info("Matrices loaded")
+
+    def _precompute_champion_embeddings(self):
+        """Compute champion embeddings"""
+
+        self.logger.info("Trying to load champ embeddings via saved file")
+        champ_embedding_save_dir = os.getcwd() + "/data_representation/"
+        champ_embedding_save_filename = "champion_embeddings.parquet"
+
+        if find_files(champ_embedding_save_filename, champ_embedding_save_dir):
+            self.logger.info("Found champion embeds file. Loading it...")
+            self.champion_embeddings_loaded = pd.read_parquet(
+                champ_embedding_save_dir + champ_embedding_save_filename
+            )
+        else:
+            self.logger.info("Didn't find a file. Calculating embeddings...")
+            self.champion_embeddings_loaded = self.champion_embeddings()
+
+        self.logger.info("Champion embeddings loaded")
 
     # --- Global stats ---
     def get_win_rate_per_side(self):
@@ -383,20 +405,42 @@ class DatasetAnalysis:
 
         return synergy_btw_champs
 
-    def get_team_synergy(self, team_champs: List[int]):
+    def team_synergy_score(self, team_champs, log=True):
         """Returns team synergy score"""
-        team_synergy = 0
-        pairs = itertools.combinations(team_champs, 2)
-        for c in pairs:
-            champ_id_1 = c[0]
-            champ_id_2 = c[1]
-            team_synergy += cast(float, self.synergy_matrix.loc[champ_id_1, champ_id_2])
+        team_synergy = 0.0
+        team_champs_cleaned = [champs for champs in team_champs if champs != 0]
+        if len(team_champs_cleaned) > 1:
+            pairs = itertools.combinations(team_champs_cleaned, 2)
+            for c in pairs:
+                champ_id_1 = c[0]
+                champ_id_2 = c[1]
+                team_synergy += cast(
+                    float, self.synergy_matrix.loc[champ_id_1, champ_id_2]
+                )
 
-        team_synergy /= math.comb(len(team_champs), 2)
+            team_synergy /= math.comb(len(team_champs_cleaned), 2)
 
-        self.logger.info(f"The team synergy is about {team_synergy * 100:.2f}%")
+        if log:
+            self.logger.info(f"The team synergy is about {team_synergy * 100:.2f}%")
 
         return team_synergy
+
+    def team_counter_score(self, blue_team, red_team):
+        counter_score = 0.0
+        blue_team_cleaned = [champs for champs in blue_team if champs != 0]
+        red_team_cleaned = [champs for champs in red_team if champs != 0]
+        i = 0
+
+        if len(blue_team_cleaned + red_team_cleaned) < 2:
+            return counter_score
+        for blue_champ in blue_team_cleaned:
+            for red_champ in red_team_cleaned:
+                i += 1
+                counter_score += self.counter_matrix[blue_champ][red_champ]
+
+        counter_score /= i
+
+        return counter_score
 
     # --- Draft analysis ---
     def get_first_pick_stats(
@@ -538,13 +582,13 @@ class DatasetAnalysis:
             for i, champ_id in enumerate(self.champ_id_name_map.keys())
         }
 
-        champ_embeddings_df = pd.DataFrame(champ_embeddings).T
+        champ_embeddings_df = pd.DataFrame(champ_embeddings)
         os.makedirs("./data_representation", exist_ok=True)
-        champ_embeddings_df.to_json("./data_representation/champion_embeddings.json")
+        champ_embeddings_df.to_parquet(
+            "./data_representation/champion_embeddings.parquet"
+        )
 
         return champ_embeddings_df
-
-    def get_team_features(self, team_champs): ...
 
     def _get_champion_infos(self, champ_id: int):
         """
@@ -762,7 +806,7 @@ class DatasetAnalysis:
             bt_counter.model.load_state_dict(
                 torch.load(os.path.join(save_dir, filename), weights_only=True)
             )
-            self.logger.info("Find a parameter file. Loading file...")
+            self.logger.info("Found a parameter file. Loading model...")
         else:
             self.logger.info("No parameter file found. Training model")
             bt_counter.train(
@@ -779,10 +823,6 @@ class DatasetAnalysis:
 
         matches_info = list(dict())
 
-        # 1 blue ban - 1 red ban - 1 blue ban - 1 red ban - 1 blue ban - 1 red ban
-        # 1 blue pick - 2 red picks - 2 blue picks - 1 red pick
-        # 1 ban red, 1 ban blue - 1 ban red - 1 ban blue
-        # 1 pick red -e 2 pick blue - 1 pick red
         drafting_phase: dict[str, list[dict[str, int]]] = {
             "ban_phase_1": [
                 {"blue": 0},
@@ -821,14 +861,41 @@ class DatasetAnalysis:
             bans = getattr(match, "bans")
             blue_side_win = getattr(match, "blue_side_win")
 
-            blue_bans = [0] * 5
-            blue_picks = [0] * 5
-            red_bans = [0] * 5
-            red_picks = [0] * 5
-            blue_roles = [0] * 5
-            red_roles = [0] * 5
+            blue_picks_embed = [
+                (
+                    self.champion_embeddings_loaded[
+                        blue_pick["championId"]
+                    ].values.astype(np.float32)
+                )
+                for blue_pick in picks.copy()
+                if blue_pick["side"] == "blue"
+            ]
+
+            red_picks_embed = [
+                (
+                    self.champion_embeddings_loaded[
+                        blue_pick["championId"]
+                    ].values.astype(np.float32)
+                )
+                for blue_pick in picks.copy()
+                if blue_pick["side"] == "red"
+            ]
+
+            blue_bans = np.zeros(5, dtype=np.int32)
+            blue_picks = np.zeros(5, dtype=np.int32)
+            red_bans = np.zeros(5, dtype=np.int32)
+            red_picks = np.zeros(5, dtype=np.int32)
+            blue_roles = np.zeros(5, dtype=np.int32)
+            red_roles = np.zeros(5, dtype=np.int32)
+
+            availability_mask = np.ones(self.unique_champs, dtype=np.float32)
+
+            blue_picks_embed_row, red_picks_embed_row = (
+                [[0] * len(blue_picks_embed[0])] * len(blue_picks_embed)
+            ), [[0] * len(red_picks_embed[0])] * len(red_picks_embed)
+
             step = 0
-            availability_mask = [0] * self.unique_champs
+            target_pick, target_role, target_ban = "-", "-", "-"
 
             for phase, phase_order in drafting_phase.items():
                 phase_type = phase.split("_")[0]
@@ -838,40 +905,71 @@ class DatasetAnalysis:
                     key = list(side.keys())[0]
                     val = list(side.values())[0]
 
+                    target_winrate = (
+                        1.0
+                        if (key == "blue")
+                        and blue_side_win
+                        or (key == "red" and not blue_side_win)
+                        else 0.0
+                    )
+
                     if phase_type == "ban":
+                        target_pick = "-"
+                        target_role = "-"
                         if key == "blue":
-                            target = bans[val]["championId"]
+                            target_ban = bans[val]["championId"]
                         else:
-                            target = bans[val + 5]["championId"]
+                            target_ban = bans[val + 5]["championId"]
                     elif phase_type == "pick":
+                        target_ban = "-"
                         if key == "blue":
-                            target = picks[val]["championId"]
+                            target_pick = picks[val]["championId"]
+                            target_role = picks[val]["position"]
                         else:
-                            target = picks[val + 5]["championId"]
-                    else:
-                        target = "-"
+                            target_pick = picks[val + 5]["championId"]
+                            target_role = picks[val + 5]["position"]
+
+                    team_counter_score = self.team_counter_score(blue_picks, red_picks)
+
+                    blue_team_synergy_score = self.team_synergy_score(
+                        blue_picks, log=False
+                    )
+                    red_team_synergy_score = self.team_synergy_score(
+                        red_picks, log=False
+                    )
 
                     matches_info.append(
                         {
                             "match_id": match_id,
                             "step": step,
                             "blue_picks": blue_picks.copy(),
+                            "blue_picks_embed": np.concatenate(
+                                blue_picks_embed_row.copy(), dtype=np.float32
+                            ),
                             "red_picks": red_picks.copy(),
+                            "red_picks_embed": np.concatenate(
+                                red_picks_embed_row.copy(), dtype=np.float32
+                            ),
                             "blue_bans": blue_bans.copy(),
                             "red_bans": red_bans.copy(),
                             "blue_roles_filled": blue_roles.copy(),
                             "red_roles_filled": red_roles.copy(),
-                            "availability": availability_mask.copy(),
-                            "synergy_score": 0,
-                            "counter_score": 0,
-                            "action_to_do": phase_type,
-                            "side_doing_action": key,
-                            "target(next pick/ban)": target,
-                            "winning_side": "blue" if blue_side_win else "red",
+                            "availability": availability_mask[:],
+                            "blue_synergy_score": blue_team_synergy_score,
+                            "red_synergy_score": red_team_synergy_score,
+                            # how much blue team counters red team
+                            "counter_score": team_counter_score,
+                            "next_phase": phase_type,
+                            "next_side": key,
+                            "target_pick": target_pick,
+                            "target_ban": target_ban,
+                            "target_role": target_role,
+                            "target_winrate": target_winrate,
                         }
                     )
 
                     step += 1
+
                     # Ban phases
                     if phase_type == "ban":
                         if key == "blue":
@@ -879,13 +977,13 @@ class DatasetAnalysis:
 
                             availability_mask[
                                 self.champ_id_to_idx_map[bans[val]["championId"]]
-                            ] = 1
+                            ] = 0
                         elif key == "red":
                             red_bans[val] = bans[val + 5]["championId"]
 
                             availability_mask[
                                 self.champ_id_to_idx_map[bans[val + 5]["championId"]]
-                            ] = 1
+                            ] = 0
                     # Pick phases
                     else:
                         if key == "red":
@@ -896,7 +994,9 @@ class DatasetAnalysis:
 
                             availability_mask[
                                 self.champ_id_to_idx_map[pick_info["championId"]]
-                            ] = 1
+                            ] = 0
+
+                            red_picks_embed_row[val] = red_picks_embed[val]
                         elif key == "blue":
                             pick_info = picks[val]
 
@@ -905,9 +1005,19 @@ class DatasetAnalysis:
 
                             availability_mask[
                                 self.champ_id_to_idx_map[pick_info["championId"]]
-                            ] = 1
+                            ] = 0
+
+                            blue_picks_embed_row[val] = blue_picks_embed[val]
+
+        df = pd.DataFrame(matches_info)
+        df["target_pick"] = df["target_pick"].astype(str)
+        df["target_ban"] = df["target_ban"].astype(str)
+        df["target_role"] = df["target_role"].astype(str)
 
         os.makedirs("./data_representation", exist_ok=True)
-        pd.DataFrame(matches_info).to_csv("./data_representation/game_states.csv")
+        self.logger.info("Creating a csv file with 5000 rows...")
+        df.head(5000).to_csv("./data_representation/game_states.csv", index=False)
+        self.logger.info("Saving game states...")
+        df.to_parquet("./data_representation/game_states.parquet")
 
         return pd.DataFrame(matches_info)
