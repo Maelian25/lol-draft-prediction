@@ -539,6 +539,7 @@ class DatasetAnalysis:
         }
 
         champ_embeddings_df = pd.DataFrame(champ_embeddings).T
+        os.makedirs("./data_representation", exist_ok=True)
         champ_embeddings_df.to_json("./data_representation/champion_embeddings.json")
 
         return champ_embeddings_df
@@ -904,6 +905,7 @@ class DatasetAnalysis:
                                 self.champ_id_to_idx_map[pick_info["championId"]]
                             ] = 1
 
+        os.makedirs("./data_representation", exist_ok=True)
         pd.DataFrame(matches_info).to_csv("./data_representation/game_states.csv")
 
         return pd.DataFrame(matches_info)
