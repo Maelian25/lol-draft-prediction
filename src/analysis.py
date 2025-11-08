@@ -35,6 +35,7 @@ class DatasetAnalysis:
         self,
         dataset: pd.DataFrame,
         compute_matrices=False,
+        build_matches_for_ml=False,
         patches: Optional[List[str]] = None,
     ) -> None:
 
@@ -73,8 +74,6 @@ class DatasetAnalysis:
         self.num_matches = len(self.dataset)
         self.unique_champs = len(self.champ_id_name_map)
 
-        self.prepare_matches_for_ml()
-
         # Get champions data once and for all
         self.champions_data = get_champions_data()
 
@@ -87,6 +86,9 @@ class DatasetAnalysis:
         # Compute synergy matrix and counter matrix once and for all
         if compute_matrices:
             self._precompute_matrices()
+
+        if build_matches_for_ml:
+            self.prepare_matches_for_ml()
 
     def _precompute_matrices(self):
         """Compute synergy matrix and counter matrix"""
@@ -809,7 +811,6 @@ class DatasetAnalysis:
                 {"blue": 4},
                 {"red": 4},
             ],
-            "pick_final": [{"-": 0}],
         }
 
         for match in self.dataset.itertuples():
@@ -841,11 +842,13 @@ class DatasetAnalysis:
                             target = bans[val]["championId"]
                         else:
                             target = bans[val + 5]["championId"]
-                    else:
+                    elif phase_type == "pick":
                         if key == "blue":
                             target = picks[val]["championId"]
                         else:
                             target = picks[val + 5]["championId"]
+                    else:
+                        target = "-"
 
                     matches_info.append(
                         {
@@ -875,7 +878,7 @@ class DatasetAnalysis:
                             availability_mask[
                                 self.champ_id_to_idx_map[bans[val]["championId"]]
                             ] = 1
-                        else:
+                        elif key == "blue":
                             red_bans.append(bans[val + 5]["championId"])
                             availability_mask[
                                 self.champ_id_to_idx_map[bans[val + 5]["championId"]]
@@ -891,7 +894,7 @@ class DatasetAnalysis:
                             availability_mask[
                                 self.champ_id_to_idx_map[pick_info["championId"]]
                             ] = 1
-                        else:
+                        elif key == "red":
                             pick_info = picks[val]
 
                             blue_roles[ROLE_MAP[pick_info["position"]] - 1] = 1
@@ -901,11 +904,6 @@ class DatasetAnalysis:
                                 self.champ_id_to_idx_map[pick_info["championId"]]
                             ] = 1
 
-                print(f"fin de la phase {phase}, step : {step}")
-                print("Match infos : ")
-                print(pd.DataFrame(matches_info).head(21))
-                pd.DataFrame(matches_info).to_csv(
-                    "./data_representation/game_states.csv"
-                )
+        pd.DataFrame(matches_info).to_csv("./data_representation/game_states.csv")
 
-            exit()
+        return pd.DataFrame(matches_info)

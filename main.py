@@ -105,7 +105,7 @@ if __name__ == "__main__":
         # Analysing the full dataset with patches restriction
         patches = ["15.19", "15.20", "15.21"]
         dataset_on_patch_restriction = DatasetAnalysis(
-            df_world, compute_matrices=True, patches=patches
+            df_world, compute_matrices=True, build_matches_for_ml=True, patches=patches
         )
 
         dataset_on_patch_restriction.get_win_rate_per_side()
