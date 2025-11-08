@@ -821,10 +821,10 @@ class DatasetAnalysis:
             bans = getattr(match, "bans")
             blue_side_win = getattr(match, "blue_side_win")
 
-            blue_bans = []  # at a given time
-            blue_picks = []  # at a given time
-            red_bans = []  # at a given time
-            red_picks = []  # at a given time
+            blue_bans = [0] * 5
+            blue_picks = [0] * 5
+            red_bans = [0] * 5
+            red_picks = [0] * 5
             blue_roles = [0] * 5
             red_roles = [0] * 5
             step = 0
@@ -875,12 +875,14 @@ class DatasetAnalysis:
                     # Ban phases
                     if phase_type == "ban":
                         if key == "blue":
-                            blue_bans.append(bans[val]["championId"])
+                            blue_bans[val] = bans[val]["championId"]
+
                             availability_mask[
                                 self.champ_id_to_idx_map[bans[val]["championId"]]
                             ] = 1
                         elif key == "red":
-                            red_bans.append(bans[val + 5]["championId"])
+                            red_bans[val] = bans[val + 5]["championId"]
+
                             availability_mask[
                                 self.champ_id_to_idx_map[bans[val + 5]["championId"]]
                             ] = 1
@@ -890,7 +892,7 @@ class DatasetAnalysis:
                             pick_info = picks[val + 5]
 
                             red_roles[ROLE_MAP[pick_info["position"]] - 1] = 1
-                            red_picks.append(pick_info["championId"])
+                            red_picks[val] = pick_info["championId"]
 
                             availability_mask[
                                 self.champ_id_to_idx_map[pick_info["championId"]]
@@ -899,7 +901,7 @@ class DatasetAnalysis:
                             pick_info = picks[val]
 
                             blue_roles[ROLE_MAP[pick_info["position"]] - 1] = 1
-                            blue_picks.append(pick_info["championId"])
+                            blue_picks[val] = pick_info["championId"]
 
                             availability_mask[
                                 self.champ_id_to_idx_map[pick_info["championId"]]
