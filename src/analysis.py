@@ -890,9 +890,12 @@ class DatasetAnalysis:
 
             availability_mask = np.ones(self.unique_champs, dtype=np.float32)
 
-            blue_picks_embed_row, red_picks_embed_row = (
-                [[0] * len(blue_picks_embed[0])] * len(blue_picks_embed)
-            ), [[0] * len(red_picks_embed[0])] * len(red_picks_embed)
+            blue_picks_embed_row = [
+                [0] * len(blue_picks_embed[0]) for _ in blue_picks_embed
+            ]
+            red_picks_embed_row = [
+                [0] * len(red_picks_embed[0]) for _ in red_picks_embed
+            ]
 
             step = 0
             target_pick, target_role, target_ban = "-", "-", "-"
@@ -944,11 +947,17 @@ class DatasetAnalysis:
                             "step": step,
                             "blue_picks": blue_picks.copy(),
                             "blue_picks_embed": np.concatenate(
-                                blue_picks_embed_row.copy(), dtype=np.float32
+                                [
+                                    np.array(row, dtype=np.float32)
+                                    for row in blue_picks_embed_row
+                                ]
                             ),
                             "red_picks": red_picks.copy(),
                             "red_picks_embed": np.concatenate(
-                                red_picks_embed_row.copy(), dtype=np.float32
+                                [
+                                    np.array(row, dtype=np.float32)
+                                    for row in red_picks_embed_row
+                                ]
                             ),
                             "blue_bans": blue_bans.copy(),
                             "red_bans": red_bans.copy(),
