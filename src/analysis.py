@@ -10,6 +10,8 @@ from sklearn import preprocessing
 import torch
 import os
 
+from tqdm import tqdm
+
 from src.utils.data_helper import (
     get_champions_id_name_map,
     replace_wrong_position,
@@ -854,7 +856,7 @@ class DatasetAnalysis:
             ],
         }
 
-        for match in self.dataset.itertuples():
+        for match in tqdm(self.dataset.itertuples(), desc="Match count"):
 
             match_id = getattr(match, "match_id")
             picks = getattr(match, "picks")
@@ -963,7 +965,7 @@ class DatasetAnalysis:
                             "red_bans": red_bans.copy(),
                             "blue_roles_filled": blue_roles.copy(),
                             "red_roles_filled": red_roles.copy(),
-                            "availability": availability_mask[:],
+                            "availability": availability_mask.copy(),
                             "blue_synergy_score": blue_team_synergy_score,
                             "red_synergy_score": red_team_synergy_score,
                             # how much blue team counters red team
