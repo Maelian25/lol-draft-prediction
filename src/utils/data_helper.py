@@ -152,7 +152,7 @@ def shuffle_picks_order_with_weights(picks, weights=[0.5, 0.7, 0.6, 0.2, 0.2]):
 
 
 def replace_missed_bans(bans):
-    """Replace a ban in the dataset that is -1 so that there is 10 bans per game"""
+    """Replace a ban in the dataset that is -1 so that there are 10 bans per game"""
     champions_id_and_name = get_champions_id_name_map()
     all_champ_ids = list(champions_id_and_name.keys())
 
