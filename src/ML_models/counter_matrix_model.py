@@ -1,9 +1,11 @@
-import os
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
+
+from src.utils.constants import BT_MODEL, MODELS_PARAMETER_FOLDER
+from src.utils.general_helper import save_model
 
 
 class BTFeature_Embedding_Model(nn.Module):
@@ -89,14 +91,9 @@ class BTFeatureCounter:
             if epoch % 100 == 0:
                 print(f"Epoch {epoch:4d} | Loss : {loss.item():.6f}")
             if epoch % num_epochs == 0:
-                os.makedirs(
-                    os.path.join(os.getcwd(), "./models_parameter"), exist_ok=True
-                )
-                torch.save(
-                    self.model.state_dict(), "./models_parameter/BTFeature_param.pth"
-                )
+                save_model(self.model.state_dict(), MODELS_PARAMETER_FOLDER, BT_MODEL)
 
-    def counter_matrix(self, champ_features, champ_id_to_idx):
+    def evaluate(self, champ_features, champ_id_to_idx):
         """
         Evaluate model and return a dataframe containing every counter data
         This should allow counter score calculation within a game

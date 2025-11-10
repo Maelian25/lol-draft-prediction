@@ -1,6 +1,9 @@
 from datetime import datetime
 import os
 
+import pandas as pd
+import torch
+
 from src.utils.logger_config import get_logger
 
 logger = get_logger("Helper", "general_helper.log")
@@ -13,10 +16,56 @@ def convert_unix_timestamp_to_date(ts):
     return str(datetime.fromtimestamp(timestamp))
 
 
-def find_files(filename, search_path):
+def find_file(filename, search_path):
 
     for _, _, files in os.walk(search_path):
         if filename in files:
+            logger.info(f"Found file ! Loading {filename}...")
             return True
         else:
+            logger.info("Didn't find any matching file.")
             return False
+
+
+def save_file(
+    data: pd.DataFrame,
+    location: str,
+    filename: str,
+):
+
+    os.makedirs(location, exist_ok=True)
+    format = filename.split(".")[1]
+    full_loc = location + filename
+
+    try:
+        match (format):
+            case "csv":
+                data.to_csv(full_loc, index=False)
+            case "json":
+                data.to_json(full_loc)
+            case "parquet":
+                data.to_parquet(full_loc, engine="pyarrow")
+    except Exception as e:
+        logger.info(f"An error occurred when saving : {e}")
+    finally:
+        logger.info(f"Successfully saved file {filename}")
+
+
+def save_model(
+    model: object,
+    location: str,
+    filename: str,
+):
+
+    os.makedirs(location, exist_ok=True)
+    format = filename.split(".")[1]
+    full_loc = location + filename
+
+    try:
+        match (format):
+            case "pth":
+                torch.save(model, full_loc)
+    except Exception as e:
+        logger.info(f"An error occurred when saving : {e}")
+    finally:
+        logger.info(f"Successfully Saved file {filename}")

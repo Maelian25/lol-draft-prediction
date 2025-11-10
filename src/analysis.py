@@ -12,6 +12,18 @@ import os
 
 from tqdm import tqdm
 
+from src.utils.constants import (
+    BT_MODEL,
+    CHAMP_EMBEDS,
+    COUNT_MAT,
+    DATA_REPRESENTATION_FOLDER,
+    DRAFT_STATES_CSV,
+    DRAFT_STATES_PARQUET,
+    MATRICES_FOLDER,
+    MODELS_PARAMETER_FOLDER,
+    ROLE_MAP,
+    SYN_MAT,
+)
 from src.utils.data_helper import (
     get_champions_id_name_map,
     replace_wrong_position,
@@ -23,11 +35,9 @@ from src.utils.champions_helper import (
     tags_one_hot_encoder,
     unique_tags,
 )
-from src.utils.general_helper import find_files
+from src.utils.general_helper import find_file, save_file
 from src.utils.logger_config import get_logger
 from src.ML_models.counter_matrix_model import BTFeatureCounter
-
-ROLE_MAP = {"TOP": 1, "JUNGLE": 2, "MIDDLE": 3, "BOTTOM": 4, "SUPPORT": 5}
 
 
 class DatasetAnalysis:
@@ -105,17 +115,12 @@ class DatasetAnalysis:
     def _precompute_champion_embeddings(self):
         """Compute champion embeddings"""
 
-        self.logger.info("Trying to load champ embeddings via saved file")
-        champ_embedding_save_dir = os.getcwd() + "/data_representation/"
-        champ_embedding_save_filename = "champion_embeddings.parquet"
-
-        if find_files(champ_embedding_save_filename, champ_embedding_save_dir):
-            self.logger.info("Found champion embeds file. Loading it...")
+        if find_file(DATA_REPRESENTATION_FOLDER, CHAMP_EMBEDS):
             self.champion_embeddings_loaded = pd.read_parquet(
-                champ_embedding_save_dir + champ_embedding_save_filename
+                DATA_REPRESENTATION_FOLDER + CHAMP_EMBEDS + "parquet"
             )
         else:
-            self.logger.info("Didn't find a file. Calculating embeddings...")
+            self.logger.info("Calculating embeddings...")
             self.champion_embeddings_loaded = self.champion_embeddings()
 
         self.logger.info("Champion embeddings loaded")
@@ -669,6 +674,8 @@ class DatasetAnalysis:
             columns=list(self.champ_id_to_idx_map.keys()),
         )
 
+        save_file(symetry_df, MATRICES_FOLDER, SYN_MAT)
+
         if plot:
             plt.figure(figsize=(12, 10))
             sns.heatmap(synergy_matrix, cmap="coolwarm", center=0.5)
@@ -767,64 +774,70 @@ class DatasetAnalysis:
 
         return champ_features
 
-    def _compute_counter_matrix(self, plot=False):
+    def _compute_counter_matrix(self):
         """
         Compute synergy matrix based on winrate and a small machine learning model
         to finetune values based on Bradley–Terry model
         Provide the probability of a champ to win against another
         """
-        game_won_by_1_vs_2_matrix = self._count_wins_vs()
-        pairs_data_df = self._prepare_counter_matrix_data(game_won_by_1_vs_2_matrix)
-        champ_features = self._counter_matrix_champions_embedding()
-
-        X_1 = torch.tensor(
-            np.stack(
-                [champ_features[r["champ_id_1"]] for _, r in pairs_data_df.iterrows()]
-            ),
-            dtype=torch.float32,
-        )
-        X_2 = torch.tensor(
-            np.stack(
-                [champ_features[r["champ_id_2"]] for _, r in pairs_data_df.iterrows()]
-            ),
-            dtype=torch.float32,
-        )
-        idx_1 = torch.tensor(pairs_data_df["champ_idx_1"].values, dtype=torch.long)
-        idx_2 = torch.tensor(pairs_data_df["champ_idx_2"].values, dtype=torch.long)
-
-        target = torch.tensor(pairs_data_df["target"].values, dtype=torch.float32)
-        weight = torch.tensor(pairs_data_df["weight"].values, dtype=torch.float32)
-        weight = torch.clamp(torch.sqrt(weight), 0.01, 50)
-        weight = weight / weight.mean()
-
         bt_counter = BTFeatureCounter(
             input_dim=30, num_champs=self.unique_champs, embed_dim=32, device="cpu"
         )
+        champ_features = self._counter_matrix_champions_embedding()
 
-        save_dir = os.getcwd() + "/models_parameter/"
-        filename = "BTFeature_param.pth"
-
-        if find_files(filename=filename, search_path=save_dir):
+        if find_file(filename=BT_MODEL, search_path=MODELS_PARAMETER_FOLDER):
             bt_counter.model.load_state_dict(
-                torch.load(os.path.join(save_dir, filename), weights_only=True)
+                torch.load(
+                    os.path.join(MODELS_PARAMETER_FOLDER, BT_MODEL),
+                    weights_only=True,
+                )
             )
-            self.logger.info("Found a parameter file. Loading model...")
         else:
             self.logger.info("No parameter file found. Training model")
+
+            game_won_by_1_vs_2_matrix = self._count_wins_vs()
+            pairs_data_df = self._prepare_counter_matrix_data(game_won_by_1_vs_2_matrix)
+
+            X_1 = torch.tensor(
+                np.stack(
+                    [
+                        champ_features[r["champ_id_1"]]
+                        for _, r in pairs_data_df.iterrows()
+                    ]
+                ),
+                dtype=torch.float32,
+            )
+            X_2 = torch.tensor(
+                np.stack(
+                    [
+                        champ_features[r["champ_id_2"]]
+                        for _, r in pairs_data_df.iterrows()
+                    ]
+                ),
+                dtype=torch.float32,
+            )
+            idx_1 = torch.tensor(pairs_data_df["champ_idx_1"].values, dtype=torch.long)
+            idx_2 = torch.tensor(pairs_data_df["champ_idx_2"].values, dtype=torch.long)
+
+            target = torch.tensor(pairs_data_df["target"].values, dtype=torch.float32)
+            weight = torch.tensor(pairs_data_df["weight"].values, dtype=torch.float32)
+            weight = torch.clamp(torch.sqrt(weight), 0.01, 50)
+            weight = weight / weight.mean()
+
             bt_counter.train(
                 X_1, X_2, idx_1, idx_2, target, weight, num_epochs=2500, lr=3e-3
             )
 
-        P_df = bt_counter.counter_matrix(
+        counter_matrix_df = bt_counter.evaluate(
             champ_features, self.champ_id_to_idx_map
-        ).round(3)
+        )
+        save_file(counter_matrix_df, MATRICES_FOLDER, COUNT_MAT)
 
-        return P_df
+        return counter_matrix_df
 
     def prepare_matches_for_ml(self):
 
         matches_info = list(dict())
-        champ_embeddings = self.champion_embeddings_loaded
         embed_dim = len(self.champion_embeddings_loaded.index)
 
         drafting_phase: dict[str, list[dict[str, int]]] = {
@@ -963,9 +976,9 @@ class DatasetAnalysis:
                         role_idx = ROLE_MAP[pick_info["position"]] - 1
                         champ_id = pick_info["championId"]
 
-                        champ_embed = champ_embeddings[champ_id].values.astype(
-                            np.float32
-                        )
+                        champ_embed = self.champion_embeddings_loaded[
+                            champ_id
+                        ].values.astype(np.float32)
                         start = val * embed_dim
                         end = start + embed_dim
 
@@ -989,10 +1002,11 @@ class DatasetAnalysis:
         df["target_ban"] = df["target_ban"].astype(str)
         df["target_role"] = df["target_role"].astype(str)
 
-        os.makedirs("./data_representation", exist_ok=True)
-        self.logger.info("Creating a csv file with 100 rows...")
-        df.head(100).to_csv("./data_representation/game_states.csv", index=False)
-        self.logger.info("Saving game states...")
-        df.to_parquet("./data_representation/game_states.parquet")
+        save_file(
+            df.head(100),
+            DATA_REPRESENTATION_FOLDER,
+            DRAFT_STATES_CSV,
+        )
+        save_file(df, DATA_REPRESENTATION_FOLDER, DRAFT_STATES_PARQUET)
 
         return pd.DataFrame(matches_info)
