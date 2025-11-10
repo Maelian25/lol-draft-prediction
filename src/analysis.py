@@ -590,10 +590,7 @@ class DatasetAnalysis:
         }
 
         champ_embeddings_df = pd.DataFrame(champ_embeddings)
-        os.makedirs("./data_representation", exist_ok=True)
-        champ_embeddings_df.to_parquet(
-            "./data_representation/champion_embeddings.parquet"
-        )
+        save_file(champ_embeddings_df, DATA_REPRESENTATION_FOLDER, CHAMP_EMBEDS)
 
         return champ_embeddings_df
 
