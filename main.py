@@ -18,7 +18,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 logger = get_logger("Main", "main_file.log")
 
 SAVE_AFTER_ITERATION = 1000
-SAVE_PATH = os.path.join(os.getcwd(), "data/raw/datasets")
+SAVE_PATH = os.path.join(os.getcwd(), "data/datasets")
 REGIONS = dict({"EUROPE": "EU", "KOREA": "KR", "AMERICA": "US"})  # region : save_dir
 ELOS = dict(
     {"challenger": 125, "grandmaster": 250, "master": 500}
