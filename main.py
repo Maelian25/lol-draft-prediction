@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from src.analysis import DatasetAnalysis
+from src.analysis_1 import DatasetAnalysis
 from src.dataset import Dataset
 from src.utils.champions_helper import champName_to_champId
 from src.utils.data_helper import (
