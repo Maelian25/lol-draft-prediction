@@ -278,3 +278,11 @@ class DatasetAnalysis:
         save_file(df, DATA_REPRESENTATION_FOLDER, DRAFT_STATES_PARQUET)
 
         return pd.DataFrame(matches_info)
+
+    def get_overview(self):
+        winrate = self.champion_stats.get_champ_win_rate()
+        synergy = self.synergy.compute_synergy_matrix()
+        return {
+            "winrate": winrate.head(10),
+            "synergy_sample": synergy.iloc[:5, :5],
+        }
