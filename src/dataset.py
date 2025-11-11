@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 from src.utils.data_helper import (
-    replace_missed_bans,
+    replace_wrong_ban,
     riot_request,
     save_json_to_dir,
     shuffle_picks_order_with_weights,
@@ -167,9 +167,6 @@ class Dataset:
                         missing_ban = True
                         continue
                 if missing_ban:
-                    replace_missed_bans(bans)
-
-                if missing_ban:
                     game_missing_ban_count += 1
 
                 # Extracting picks
@@ -190,6 +187,8 @@ class Dataset:
                             "order": (order + 1 if team_id == "blue" else order - 4),
                         }
                     )
+
+                replace_wrong_ban(picks, bans)
 
                 game_data.append(
                     {

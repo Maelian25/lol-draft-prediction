@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Tuple
+from typing import Any, List, Tuple
 import requests
 import time
 import logging
@@ -151,24 +151,6 @@ def shuffle_picks_order_with_weights(picks, weights=[0.5, 0.7, 0.6, 0.2, 0.2]):
     return new_blue_side + new_red_side
 
 
-def replace_missed_bans(bans):
-    """Replace a ban in the dataset that is -1 so that there are 10 bans per game"""
-    champions_id_and_name = get_champions_id_name_map()
-    all_champ_ids = list(champions_id_and_name.keys())
-
-    used_champ_ids = [b["championId"] for b in bans if b["championId"] != -1]
-
-    for b in bans:
-        if b["championId"] == -1:
-            available_champs = list(set(all_champ_ids) - set(used_champ_ids))
-            if not available_champs:
-                break
-            new_champ = random.choice(available_champs)
-
-            b["championId"] = new_champ
-            used_champ_ids.append(new_champ)
-
-
 def load_scrapped_data(save_path, regionId, elo) -> Tuple[pd.DataFrame, bool]:
     """Allow loading data from files instead of scrapping it again"""
     if not os.path.exists(save_path):
@@ -228,3 +210,41 @@ def replace_wrong_position(dataset: pd.DataFrame):
 
     dataset["picks"] = dataset["picks"].apply(fix_positions)
     return dataset
+
+
+def replace_wrong_ban(picks: List[dict[Any, Any]], bans: List[dict[Any, Any]]):
+    """
+    Helps fixing errors in the dataset, fixing duplicate bans
+    in case both teams ban the same champion and also if a ban is missing
+    """
+
+    champions_id_and_name = get_champions_id_name_map()
+    all_champ_ids = set(champions_id_and_name.keys())
+
+    used_champ_ids = {p["championId"] for p in picks if p["championId"] != -1} | {
+        b["championId"] for b in bans if b["championId"] != -1
+    }
+
+    bans_dict = set()
+    available_champs = list(all_champ_ids - used_champ_ids)
+
+    for b in bans:
+        champ_id = b["championId"]
+
+        # Handle missing or duplicate bans
+        if champ_id == -1 or champ_id in bans_dict:
+            if not available_champs:
+                logger.warning("No more available champions to replace bans.")
+                break
+
+            # Pick a new random champ from available pool
+            new_champ = random.choice(available_champs)
+
+            b["championId"] = new_champ
+
+            # Update used + available tracking
+            used_champ_ids.add(new_champ)
+            available_champs.remove(new_champ)
+            bans_dict.add(new_champ)
+        else:
+            bans_dict.add(champ_id)

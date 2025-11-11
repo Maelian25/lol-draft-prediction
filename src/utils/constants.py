@@ -4,6 +4,7 @@ ROLE_MAP = {"TOP": 1, "JUNGLE": 2, "MIDDLE": 3, "BOTTOM": 4, "SUPPORT": 5}
 DATA_REPRESENTATION_FOLDER = "./data/representation/"
 MODELS_PARAMETER_FOLDER = "./data/models_parameter/"
 MATRICES_FOLDER = "./data/matrices/"
+DATASETS_FOLDER = "./data/datasets/"
 
 # FILENAMES
 BT_MODEL = "BTFeature_param.pth"
