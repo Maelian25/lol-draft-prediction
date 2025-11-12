@@ -12,7 +12,7 @@ from src.utils.constants import (
     MATRICES_FOLDER,
     MODELS_PARAMETER_FOLDER,
 )
-from src.utils.general_helper import find_file, save_file
+from src.utils.general_helper import find_file, load_file, save_file
 
 
 class CounterAnalysis(BaseAnalysis):
@@ -118,6 +118,11 @@ class CounterAnalysis(BaseAnalysis):
 
         Provide the probability of a champ to win against another
         """
+        data = load_file(MATRICES_FOLDER, COUNT_MAT)
+
+        if data is not None:
+            return data
+
         bt_counter = BTFeatureCounter(
             input_dim=30, num_champs=self.n_champs, embed_dim=32, device="cpu"
         )

@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 from src.analysis.base_analysis import BaseAnalysis
 from src.utils.constants import MATRICES_FOLDER, SYN_MAT
-from src.utils.general_helper import save_file
+from src.utils.general_helper import load_file, save_file
 
 
 class SynergyAnalysis(BaseAnalysis):
@@ -24,6 +24,11 @@ class SynergyAnalysis(BaseAnalysis):
             alpha: Parameter to compute Laplace smoothing
 
         """
+        data = load_file(MATRICES_FOLDER, SYN_MAT)
+
+        if data is not None:
+            return data
+
         game_count_matrix = np.zeros((self.n_champs, self.n_champs), dtype=np.float32)
         game_won_count_matrix = np.zeros(
             (self.n_champs, self.n_champs), dtype=np.float32

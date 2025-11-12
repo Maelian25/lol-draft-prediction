@@ -14,7 +14,7 @@ from src.utils.constants import (
     DRAFT_STATES_PARQUET,
     ROLE_MAP,
 )
-from src.utils.general_helper import save_file
+from src.utils.general_helper import load_file, save_file
 from src.utils.logger_config import get_logger
 
 
@@ -35,7 +35,12 @@ class DatasetAnalysis:
         self.synergy = SynergyAnalysis(data, patches)
         self.counter = CounterAnalysis(data, patches)
 
-    def get_champion_embeddings(self):
+    def get_champion_embeddings(self) -> pd.DataFrame:
+
+        data = load_file(DATA_REPRESENTATION_FOLDER, CHAMP_EMBEDS)
+
+        if data is not None:
+            return data
 
         win_rate = self.champion_stats.get_champ_win_rate(plot=False)
         pick_rate = self.champion_stats.get_champ_pick_or_ban_rate(pick=True)
@@ -75,7 +80,12 @@ class DatasetAnalysis:
 
         return champ_embeddings_df
 
-    def build_matches_states(self):
+    def build_matches_states(self) -> pd.DataFrame:
+
+        data = load_file(DATA_REPRESENTATION_FOLDER, DRAFT_STATES_PARQUET)
+
+        if data is not None:
+            return data
 
         matches_info = list(dict())
 
