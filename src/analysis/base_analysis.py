@@ -33,11 +33,11 @@ class BaseAnalysis:
         else:
             self.logger.info("Analysing full dataset")
 
-        self.num_matches = len(self.dataset)
-
         self.__clean_dataset()
         self.__define_maps()
         self.__define_encoders()
+
+        self.num_matches = len(self.dataset)
 
         self.logger.info(f"Dataset succesfully loaded ({self.num_matches} matches)")
 
