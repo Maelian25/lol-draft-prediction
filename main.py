@@ -157,6 +157,9 @@ if __name__ == "__main__":
         logger.info(f"Similarity btw {ahri} and {malphite} : {cos_sim_2[0][0]:.2f}")
 
         logger.info("Analysis ended for the restricted dataset")
+        logger.info("Now building matches states...")
+        matches_states = analysis_patch.build_matches_states()
+        print(matches_states.head(20))
 
     except Exception as e:
         logger.critical(f"Fatal error: {e}", exc_info=True)
