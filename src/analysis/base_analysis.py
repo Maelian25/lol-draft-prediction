@@ -39,8 +39,6 @@ class BaseAnalysis:
 
         self.num_matches = len(self.dataset)
 
-        self.logger.info(f"Dataset succesfully loaded ({self.num_matches} matches)")
-
     def __clean_dataset(self):
         """
         Private fn helping clean the dataset

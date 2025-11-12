@@ -6,6 +6,7 @@ import pandas as pd
 from src.analysis.matrices.counter_matrix import CounterAnalysis
 from src.analysis.matrices.synergy_matrix import SynergyAnalysis
 from src.analysis.stats.champion_stats import ChampionAnalysis
+from src.analysis.stats.global_stats import GlobalAnalysis
 from src.utils.constants import (
     CHAMP_EMBEDS,
     DATA_REPRESENTATION_FOLDER,
@@ -29,6 +30,7 @@ class DatasetAnalysis:
         if patches:
             self.logger.info(f"Analysing dataset for patch {'-'.join(patches)}")
 
+        self.global_analysis = GlobalAnalysis(data, patches)
         self.champion_stats = ChampionAnalysis(data, patches)
         self.synergy = SynergyAnalysis(data, patches)
         self.counter = CounterAnalysis(data, patches)

@@ -9,7 +9,7 @@ class GlobalAnalysis(BaseAnalysis):
     Provide methods for global anaylysis of the dataset
     """
 
-    def get_win_rate_per_side(self) -> pd.Series[float]:
+    def get_win_rate_per_side(self) -> pd.Series:
         """Provide win rate for each side"""
         blue_side_win = self.dataset["blue_side_win"].value_counts(normalize=True)
 

@@ -5,9 +5,10 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from src.analysis_1 import DatasetAnalysis
+from src.analysis.dataset_analysis import DatasetAnalysis
 from src.dataset import Dataset
 from src.utils.champions_helper import champName_to_champId
+from src.utils.constants import DATASETS_FOLDER, ELOS, REGIONS, SAVE_AFTER_ITERATION
 from src.utils.data_helper import (
     load_scrapped_data,
 )
@@ -16,13 +17,6 @@ from src.utils.logger_config import get_logger
 from sklearn.metrics.pairwise import cosine_similarity
 
 logger = get_logger("Main", "main_file.log")
-
-SAVE_AFTER_ITERATION = 1000
-SAVE_PATH = os.path.join(os.getcwd(), "data/datasets")
-REGIONS = dict({"EUROPE": "EU", "KOREA": "KR", "AMERICA": "US"})  # region : save_dir
-ELOS = dict(
-    {"challenger": 125, "grandmaster": 250, "master": 500}
-)  # elo : player_count
 
 
 def get_regional_data_from_api_threaded(region, short_name):
@@ -36,7 +30,7 @@ def get_regional_data_from_api_threaded(region, short_name):
     regional_dataframes: List[pd.DataFrame] = []
 
     for elo, player_count in ELOS.items():
-        region_save_dir = os.path.join(SAVE_PATH, short_name)
+        region_save_dir = os.path.join(DATASETS_FOLDER, short_name)
         os.makedirs(region_save_dir, exist_ok=True)
 
         region_logger.info(f"Started scrapping {region}-{elo}")
@@ -93,57 +87,49 @@ if __name__ == "__main__":
 
         df_world: pd.DataFrame = pd.concat(df_world_list, ignore_index=True)
 
-        # --- Analysing data ---
-        # Analysing the full dataset without patches restriction
-        full_dataset_analysis = DatasetAnalysis(df_world, compute_matrices=False)
-        full_dataset_analysis.get_win_rate_per_side()
-        full_dataset_analysis.get_patch_distribution()
-        full_dataset_analysis.get_game_duration_stats(True)
-        full_dataset_analysis.get_draft_order_correlation()
-        logger.info("Analysis ended for the full dataset")
-
-        # Analysing the full dataset with patches restriction
+        # Analysing patches on the dataset
         patches = ["15.19", "15.20", "15.21"]
-        dataset_on_patch_restriction = DatasetAnalysis(
-            df_world, compute_matrices=True, build_matches_for_ml=True, patches=patches
-        )
+        analysis_patch = DatasetAnalysis(df_world, patches)
 
-        dataset_on_patch_restriction.get_win_rate_per_side()
-        dataset_on_patch_restriction.get_game_duration_stats(plot=False)
-        pick_rate = dataset_on_patch_restriction.get_champ_pick_or_ban_rate(
+        logger.info("Global data analysis on the dataset")
+
+        analysis_patch.global_analysis.get_game_duration_stats(plot=True)
+        analysis_patch.global_analysis.get_patch_distribution(plot=True)
+        analysis_patch.global_analysis.get_win_rate_per_side()
+
+        logger.info("Analysing data for one champion : Kai'Sa")
+
+        champ_to_analyse = champName_to_champId("kai'sa")
+        pick_rate = analysis_patch.champion_stats.get_champ_pick_or_ban_rate(
             pick=True, plot=True
         )
-        ban_rate = dataset_on_patch_restriction.get_champ_pick_or_ban_rate(
+        ban_rate = analysis_patch.champion_stats.get_champ_pick_or_ban_rate(
             pick=False, plot=True
         )
 
-        dataset_on_patch_restriction.get_first_pick_stats()
-
-        # Currently without any plotting of any sort
-        win_rate = dataset_on_patch_restriction.get_champ_win_rate()
-
-        # Analysing a champion as an example on chosen patches
-        champ_to_analyse = champName_to_champId("kai'sa")
-        dataset_on_patch_restriction.get_role_distribution(champ=champ_to_analyse)
-        all_counters = dataset_on_patch_restriction.top_10_matchups_for(
-            champ_to_analyse, plot=True
-        )
         logger.info(f"Pick rate for Kai'Sa: {pick_rate[champ_to_analyse] * 100:.2f}%")
         logger.info(f"Ban rate for Kai'Sa: {ban_rate[champ_to_analyse] * 100:.2f}%")
 
+        logger.info("Analysing one team comp")
         team_comp_to_analyse = ["ornn", "lee sin", "orianna", "yunara", "nautilus"]
         team_comp_to_analyse_ids = [
             champName_to_champId(champ) for champ in team_comp_to_analyse
         ]
 
-        dataset_on_patch_restriction.get_synergy(
+        synergy_matrix = analysis_patch.synergy.compute_synergy_matrix()
+        analysis_patch.synergy.get_synergy(
+            synergy_matrix=synergy_matrix,
             champ_id_1=team_comp_to_analyse_ids[0],
             champ_id_2=team_comp_to_analyse_ids[1],
             log=True,
         )
-        dataset_on_patch_restriction.team_synergy_score(team_comp_to_analyse_ids)
+        analysis_patch.synergy.team_synergy_score(
+            synergy_matrix=synergy_matrix, team_champs=team_comp_to_analyse_ids
+        )
 
-        champ_embeddings = dataset_on_patch_restriction.champion_embeddings()
+        logger.info("Checking champion embeddings and analysing similiraty btw champs")
+
+        champ_embeddings = analysis_patch.get_champion_embeddings()
 
         ahri = "Ahri"
         syndra = "Syndra"

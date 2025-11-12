@@ -103,7 +103,6 @@ class ChampionAnalysis(BaseAnalysis):
         lowest_rate_champ = self.champ_id_name_map[lowest_rate_id]
 
         if plot:
-
             self.logger.info(
                 f"{highest_rate_champ} has the highest "
                 f"{"pick" if pick else "ban"} rate "
