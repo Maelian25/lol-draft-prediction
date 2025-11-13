@@ -5,6 +5,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 
+from src.ML_models.draft_model import Draft_Brain
 from src.analysis.dataset_analysis import DatasetAnalysis
 from src.dataset import Dataset
 from src.utils.champions_helper import champName_to_champId
@@ -160,6 +161,12 @@ if __name__ == "__main__":
         logger.info("Now building matches states...")
         matches_states = analysis_patch.build_matches_states()
         print(matches_states.head(20))
+
+        draft_brain = Draft_Brain(
+            matchs_states=matches_states, num_champions=171, num_roles=5
+        )
+
+        draft_brain.train()
 
     except Exception as e:
         logger.critical(f"Fatal error: {e}", exc_info=True)

@@ -7,6 +7,7 @@ from src.analysis.matrices.counter_matrix import CounterAnalysis
 from src.analysis.matrices.synergy_matrix import SynergyAnalysis
 from src.analysis.stats.champion_stats import ChampionAnalysis
 from src.analysis.stats.global_stats import GlobalAnalysis
+from src.utils.champions_helper import champ_id_to_idx_map
 from src.utils.constants import (
     CHAMP_EMBEDS,
     COUNT_MAT,
@@ -104,6 +105,7 @@ class DatasetAnalysis:
         # Pre load every matrices needed for computation
         t_compute_start = perf_counter()
         champion_embeddings = self.get_champion_embeddings()
+        champ_id_to_idx = champ_id_to_idx_map()
         t_compute_end = perf_counter()
 
         self.logger.info(
@@ -211,7 +213,7 @@ class DatasetAnalysis:
                         )
                         record.update(
                             {
-                                "target_ban": target_ban,
+                                "target_ban": champ_id_to_idx[target_ban],
                                 "target_pick": np.nan,
                                 "target_role": np.nan,
                             }
@@ -224,8 +226,8 @@ class DatasetAnalysis:
                         record.update(
                             {
                                 "target_ban": np.nan,
-                                "target_pick": target_pick,
-                                "target_role": ROLE_MAP[target_role],
+                                "target_pick": champ_id_to_idx[target_pick],
+                                "target_role": ROLE_MAP[target_role] - 1,
                             }
                         )
 
@@ -248,9 +250,7 @@ class DatasetAnalysis:
                             blue_bans[val] = champ_id
 
                             availability_mask[
-                                self.champion_stats.champ_id_to_idx_map[
-                                    bans[val]["championId"]
-                                ]
+                                champ_id_to_idx[bans[val]["championId"]]
                             ] = 0
 
                             blue_bans_embed[start:end] = champ_embed
@@ -258,9 +258,7 @@ class DatasetAnalysis:
                             red_bans[val] = bans[val + 5]["championId"]
 
                             availability_mask[
-                                self.champion_stats.champ_id_to_idx_map[
-                                    bans[val + 5]["championId"]
-                                ]
+                                champ_id_to_idx[bans[val + 5]["championId"]]
                             ] = 0
 
                             red_bans_embed[start:end] = champ_embed
@@ -279,18 +277,14 @@ class DatasetAnalysis:
                             red_roles[role_idx] = 1
                             red_picks[val] = champ_id
 
-                            availability_mask[
-                                self.champion_stats.champ_id_to_idx_map[champ_id]
-                            ] = 0
+                            availability_mask[champ_id_to_idx[champ_id]] = 0
 
                             red_picks_embed[start:end] = champ_embed
                         else:
                             blue_roles[role_idx] = 1
                             blue_picks[val] = champ_id
 
-                            availability_mask[
-                                self.champion_stats.champ_id_to_idx_map[champ_id]
-                            ] = 0
+                            availability_mask[champ_id_to_idx[champ_id]] = 0
 
                             blue_picks_embed[start:end] = champ_embed
 
@@ -312,7 +306,7 @@ class DatasetAnalysis:
         )
         save_file(df, DATA_REPRESENTATION_FOLDER, DRAFT_STATES_PARQUET)
 
-        return pd.DataFrame(matches_info)
+        return df
 
     def get_overview(self):
         winrate = self.champion_stats.get_champ_win_rate()
