@@ -9,10 +9,13 @@ from src.analysis.stats.champion_stats import ChampionAnalysis
 from src.analysis.stats.global_stats import GlobalAnalysis
 from src.utils.constants import (
     CHAMP_EMBEDS,
+    COUNT_MAT,
     DATA_REPRESENTATION_FOLDER,
     DRAFT_STATES_CSV,
     DRAFT_STATES_PARQUET,
+    MATRICES_FOLDER,
     ROLE_MAP,
+    SYN_MAT,
 )
 from src.utils.general_helper import load_file, save_file
 from src.utils.logger_config import get_logger
@@ -37,10 +40,19 @@ class DatasetAnalysis:
 
     def get_champion_embeddings(self) -> pd.DataFrame:
 
-        data = load_file(DATA_REPRESENTATION_FOLDER, CHAMP_EMBEDS)
+        data_champ_embeds = load_file(DATA_REPRESENTATION_FOLDER, CHAMP_EMBEDS)
+        data_syn_matrix = load_file(MATRICES_FOLDER, SYN_MAT)
+        data_count_matrix = load_file(MATRICES_FOLDER, COUNT_MAT)
 
-        if data is not None:
-            return data
+        if data_champ_embeds is not None:
+            if data_syn_matrix is None or data_count_matrix is None:
+                self.counter_matrix = self.counter.compute_counter_matrix()
+                self.synergy_matrix = self.synergy.compute_synergy_matrix()
+            else:
+                self.synergy_matrix = data_syn_matrix
+                self.counter_matrix = data_count_matrix
+
+            return data_champ_embeds
 
         win_rate = self.champion_stats.get_champ_win_rate(plot=False)
         pick_rate = self.champion_stats.get_champ_pick_or_ban_rate(pick=True)
@@ -149,8 +161,10 @@ class DatasetAnalysis:
             red_roles = np.zeros(5, dtype=np.int32)
             availability_mask = np.ones(self.champion_stats.n_champs, dtype=np.float32)
 
-            blue_embed_flat = np.zeros(5 * embed_dim, np.float32)
-            red_embed_flat = np.zeros(5 * embed_dim, np.float32)
+            blue_picks_embed = np.zeros(5 * embed_dim, np.float32)
+            red_picks_embed = np.zeros(5 * embed_dim, np.float32)
+            blue_bans_embed = np.zeros(5 * embed_dim, np.float32)
+            red_bans_embed = np.zeros(5 * embed_dim, np.float32)
 
             step = 0
 
@@ -167,12 +181,10 @@ class DatasetAnalysis:
                     record = {
                         "match_id": match_id,
                         "step": step,
-                        "blue_picks": blue_picks.copy(),
-                        "blue_picks_embed": blue_embed_flat.copy(),
-                        "red_picks": red_picks.copy(),
-                        "red_picks_embed": red_embed_flat.copy(),
-                        "blue_bans": blue_bans.copy(),
-                        "red_bans": red_bans.copy(),
+                        "blue_picks_embed": blue_picks_embed.copy(),
+                        "red_picks_embed": red_picks_embed.copy(),
+                        "blue_bans_embed": blue_bans_embed.copy(),
+                        "red_bans_embed": red_bans_embed.copy(),
                         "blue_roles_filled": blue_roles.copy(),
                         "red_roles_filled": red_roles.copy(),
                         "availability": availability_mask.copy(),
@@ -200,8 +212,8 @@ class DatasetAnalysis:
                         record.update(
                             {
                                 "target_ban": target_ban,
-                                "target_pick": "-",
-                                "target_role": "-",
+                                "target_pick": np.nan,
+                                "target_role": np.nan,
                             }
                         )
                     else:
@@ -211,25 +223,37 @@ class DatasetAnalysis:
 
                         record.update(
                             {
-                                "target_ban": "-",
+                                "target_ban": np.nan,
                                 "target_pick": target_pick,
-                                "target_role": target_role,
+                                "target_role": ROLE_MAP[target_role],
                             }
                         )
 
                     matches_info.append(record)
                     step += 1
 
+                    start = val * embed_dim
+                    end = start + embed_dim
+
                     # Ban phases
                     if phase_type == "ban":
+                        ban_info = bans[val] if side == "blue" else picks[val + 5]
+                        champ_id = ban_info["championId"]
+
+                        champ_embed = champion_embeddings[champ_id].values.astype(
+                            np.float32
+                        )
+
                         if side == "blue":
-                            blue_bans[val] = bans[val]["championId"]
+                            blue_bans[val] = champ_id
 
                             availability_mask[
                                 self.champion_stats.champ_id_to_idx_map[
                                     bans[val]["championId"]
                                 ]
                             ] = 0
+
+                            blue_bans_embed[start:end] = champ_embed
                         else:
                             red_bans[val] = bans[val + 5]["championId"]
 
@@ -238,6 +262,8 @@ class DatasetAnalysis:
                                     bans[val + 5]["championId"]
                                 ]
                             ] = 0
+
+                            red_bans_embed[start:end] = champ_embed
                     # Pick phases
                     else:
                         pick_info = picks[val] if side == "blue" else picks[val + 5]
@@ -248,8 +274,6 @@ class DatasetAnalysis:
                         champ_embed = champion_embeddings[champ_id].values.astype(
                             np.float32
                         )
-                        start = val * embed_dim
-                        end = start + embed_dim
 
                         if side == "red":
                             red_roles[role_idx] = 1
@@ -259,7 +283,7 @@ class DatasetAnalysis:
                                 self.champion_stats.champ_id_to_idx_map[champ_id]
                             ] = 0
 
-                            red_embed_flat[start:end] = champ_embed
+                            red_picks_embed[start:end] = champ_embed
                         else:
                             blue_roles[role_idx] = 1
                             blue_picks[val] = champ_id
@@ -268,12 +292,11 @@ class DatasetAnalysis:
                                 self.champion_stats.champ_id_to_idx_map[champ_id]
                             ] = 0
 
-                            blue_embed_flat[start:end] = champ_embed
+                            blue_picks_embed[start:end] = champ_embed
 
         df = pd.DataFrame(matches_info)
-        df["target_pick"] = df["target_pick"].astype(str)
-        df["target_ban"] = df["target_ban"].astype(str)
-        df["target_role"] = df["target_role"].astype(str)
+        df["next_phase"] = (df["next_phase"] == "pick").astype(np.float32)
+        df["next_side"] = (df["next_side"] == "blue").astype(np.float32)
 
         t_compute_end = perf_counter()
 
