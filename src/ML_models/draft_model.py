@@ -176,12 +176,10 @@ class Draft_Brain:
 
         self.logger.info(f"Training on {self.device} | Input dim = {self.input_dim}")
 
-        champ_loss_fn = nn.CrossEntropyLoss(label_smoothing=0.05)
+        champ_loss_fn = nn.CrossEntropyLoss()
         role_loss_fn = nn.CrossEntropyLoss()
         winrate_loss_fn = nn.MSELoss()
-        optimizer = torch.optim.AdamW(
-            self.model.parameters(), lr=lr, weight_decay=0.01, betas=(0.9, 0.999)
-        )
+        optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr)
 
         for epoch in range(num_epochs):
             self.model.train()
