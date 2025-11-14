@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
 
 from src.utils.logger_config import get_logger
 
@@ -22,7 +23,7 @@ class Draft_Dataset(Dataset):
         ) = self.__build_vectors(matchs_states)
 
     def __len__(self):
-        return self.X.shape[1]
+        return self.X.shape[0]
 
     def __getitem__(self, idx):
         return (
@@ -76,10 +77,6 @@ class Draft_Dataset(Dataset):
                 side,
             ]
         )
-
-        print("X shape:", X.shape)
-        print("dtype:", X.dtype)
-
         return (
             torch.tensor(X, dtype=torch.float32),
             torch.tensor(data["next_phase"].to_numpy(), dtype=torch.float32),
@@ -118,7 +115,7 @@ class Draft_Unified_Model(nn.Module):
         pick_logits = self.pick_head(shared)
         ban_logits = self.ban_head(shared)
         role_logits = self.role_head(shared)
-        winrate = self.wr_head(shared)
+        winrate = torch.sigmoid(self.wr_head(shared))
 
         out_champ = torch.where(phase_flag.unsqueeze(1).bool(), pick_logits, ban_logits)
 
@@ -130,9 +127,10 @@ class Draft_Brain:
     def __init__(
         self,
         matchs_states: pd.DataFrame,
+        input_dim,
         num_champions,
         num_roles,
-        batch_size=128,
+        batch_size=1024,
         hidden_dim=512,
         dropout=0.3,
         device="cuda" if torch.cuda.is_available() else "cpu",
@@ -153,7 +151,7 @@ class Draft_Brain:
 
         train_dataset = Draft_Dataset(train_df)
         val_dataset = Draft_Dataset(val_df)
-        self.input_dim = len(train_dataset)
+        self.input_dim = input_dim
 
         self.model = nn.Module()
         self.model = Draft_Unified_Model(
@@ -161,28 +159,37 @@ class Draft_Brain:
         ).to(device)
 
         self.train_dataloader = DataLoader(
-            train_dataset, batch_size=batch_size, shuffle=True
+            train_dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=8,
+            pin_memory=True,
+            persistent_workers=True,
         )
-        self.train_dataloader = DataLoader(
+        self.val_dataloader = DataLoader(
             val_dataset, batch_size=batch_size, shuffle=True
         )
 
         self.logger = get_logger(self.__class__.__name__, "draft_training.log")
 
-    def train(self, num_epochs=1000, lr=5e-4):
+    def train(self, num_epochs=10, lr=1e-3):
 
         self.logger.info(f"Training on {self.device} | Input dim = {self.input_dim}")
 
-        champ_loss_fn = nn.CrossEntropyLoss()
+        champ_loss_fn = nn.CrossEntropyLoss(label_smoothing=0.05)
         role_loss_fn = nn.CrossEntropyLoss()
         winrate_loss_fn = nn.MSELoss()
-        optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr)
+        optimizer = torch.optim.AdamW(
+            self.model.parameters(), lr=lr, weight_decay=0.01, betas=(0.9, 0.999)
+        )
 
         for epoch in range(num_epochs):
             self.model.train()
             total_loss = 0.0
 
-            for X, phase, y_pick, y_ban, y_role, y_wr in self.train_dataloader:
+            for X, phase, y_pick, y_ban, y_role, y_wr in tqdm(
+                self.train_dataloader, desc="train", leave=False
+            ):
 
                 X, phase = X.to(self.device), phase.to(self.device)
                 y_pick, y_ban, y_role, y_wr = (
@@ -225,13 +232,13 @@ class Draft_Brain:
                     loss_wr = 0.0
 
                 # Total loss
-                loss = loss_champ + loss_role + loss_wr
+                loss = loss_champ + 0.5 * loss_role + 0.2 * loss_wr
                 loss.backward()
                 optimizer.step()
 
                 total_loss += loss.item()
-            if (epoch + 1) % 100 == 0:
-                print(
-                    f"Epoch [{epoch+1}/{num_epochs}] - "
-                    f"Loss: {total_loss / len(self.train_dataloader):.4f}"
-                )
+
+            print(
+                f"Epoch [{epoch+1}/{num_epochs}] - "
+                f"Loss: {total_loss / len(self.train_dataloader):.4f}"
+            )
