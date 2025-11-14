@@ -163,7 +163,7 @@ if __name__ == "__main__":
         print(matches_states.head(20))
 
         draft_brain = Draft_Brain(
-            matchs_states=matches_states, num_champions=171, num_roles=5
+            matchs_states=matches_states, num_champions=171, num_roles=5, batch_size=256
         )
 
         draft_brain.train()

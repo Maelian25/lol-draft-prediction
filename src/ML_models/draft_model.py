@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
@@ -120,9 +121,8 @@ class Draft_Unified_Model(nn.Module):
         winrate = self.wr_head(shared)
 
         out_champ = torch.where(phase_flag.unsqueeze(1).bool(), pick_logits, ban_logits)
-        out_role = torch.where(phase_flag.unsqueeze(1).bool(), role_logits, torch.nan)
 
-        return out_champ, out_role, winrate
+        return out_champ, role_logits, winrate
 
 
 class Draft_Brain:
@@ -147,19 +147,29 @@ class Draft_Brain:
             torch.cuda.get_device_name(0) if torch.cuda.is_available() else "No GPU",
         )
 
-        self.dataset = Draft_Dataset(matchs_states)
-        self.input_dim = len(self.dataset)
+        train_df, val_df = train_test_split(
+            matchs_states, test_size=0.2, random_state=42
+        )
+
+        train_dataset = Draft_Dataset(train_df)
+        val_dataset = Draft_Dataset(val_df)
+        self.input_dim = len(train_dataset)
 
         self.model = nn.Module()
         self.model = Draft_Unified_Model(
             self.input_dim, num_champions, num_roles, hidden_dim, dropout
         ).to(device)
 
-        self.dataloader = DataLoader(self.dataset, batch_size=batch_size, shuffle=True)
+        self.train_dataloader = DataLoader(
+            train_dataset, batch_size=batch_size, shuffle=True
+        )
+        self.train_dataloader = DataLoader(
+            val_dataset, batch_size=batch_size, shuffle=True
+        )
 
         self.logger = get_logger(self.__class__.__name__, "draft_training.log")
 
-    def train(self, num_epochs=1000, lr=1e-3):
+    def train(self, num_epochs=1000, lr=5e-4):
 
         self.logger.info(f"Training on {self.device} | Input dim = {self.input_dim}")
 
@@ -172,7 +182,7 @@ class Draft_Brain:
             self.model.train()
             total_loss = 0.0
 
-            for X, phase, y_pick, y_ban, y_role, y_wr in self.dataloader:
+            for X, phase, y_pick, y_ban, y_role, y_wr in self.train_dataloader:
 
                 X, phase = X.to(self.device), phase.to(self.device)
                 y_pick, y_ban, y_role, y_wr = (
@@ -223,5 +233,5 @@ class Draft_Brain:
             if (epoch + 1) % 100 == 0:
                 print(
                     f"Epoch [{epoch+1}/{num_epochs}] - "
-                    f"Loss: {total_loss / len(self.dataloader):.4f}"
+                    f"Loss: {total_loss / len(self.train_dataloader):.4f}"
                 )
