@@ -43,9 +43,8 @@ share/python-wheels/
 # Large JSON files with match data
 Datasets/
 datasets/
-data/raw/
 data/processed/
-data/reprsentation/*.pt
+data/representation/*.pt
 
 !example_match.json
 
