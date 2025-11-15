@@ -217,7 +217,7 @@ class DraftBrain:
             for batch in tqdm(self.train_loader):
 
                 (X, bp, rp, bb, rb, side, phase, y_pick, y_ban, y_role, y_wr) = [
-                    b.to(self.device, non_blocking=True) for b in batch  # type: ignore
+                    b.to(self.device, non_blocking=True) for b in batch
                 ]
 
                 self.opt.zero_grad()
