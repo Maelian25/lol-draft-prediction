@@ -160,9 +160,10 @@ class DraftBrain:
         device="cuda" if torch.cuda.is_available() else "cpu",
     ) -> None:
 
-        self.device = device
-
         self.logger = get_logger(self.__class__.__name__, "draft_training.log")
+
+        self.device = device
+        self.batch_size = batch_size
 
         self.logger.info(f"PyTorch version: {torch.__version__}")
         self.logger.info(f"CUDA available:  {torch.cuda.is_available()}")
@@ -170,6 +171,22 @@ class DraftBrain:
             torch.cuda.get_device_name(0) if torch.cuda.is_available() else "No GPU"
         )
         self.logger.info(f"GPU name:{gpu_name}")
+
+        self.model = DraftUnifiedModel(
+            num_champions=num_champions,
+            num_roles=num_roles,
+            input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            dropout=dropout,
+            mode=mode,
+        ).to(device)
+
+        self.__build_dataset()
+        self.__training_fns()
+
+        self.logger.info(f"Parameters used : Batch size = {batch_size} | Mode = {mode}")
+
+    def __build_dataset(self):
 
         dataset = DraftDataset()
         idx_train, idx_val = train_test_split(
@@ -181,24 +198,15 @@ class DraftBrain:
 
         self.train_loader = DataLoader(
             train_subset,
-            batch_size=batch_size,
+            batch_size=self.batch_size,
             shuffle=True,
             num_workers=8,
             persistent_workers=True,
             pin_memory=True,
         )
-        self.val_loader = DataLoader(val_subset, batch_size=batch_size)
+        self.val_loader = DataLoader(val_subset, batch_size=self.batch_size)
 
-        self.model = DraftUnifiedModel(
-            num_champions=num_champions,
-            num_roles=num_roles,
-            input_dim=input_dim,
-            hidden_dim=hidden_dim,
-            dropout=dropout,
-            mode=mode,
-        ).to(device)
-
-        self.logger.info(f"Parameters used : Batch size = {batch_size} | Mode = {mode}")
+    def __training_fns(self):
 
         self.opt = torch.optim.AdamW(self.model.parameters(), lr=1e-3)
 
