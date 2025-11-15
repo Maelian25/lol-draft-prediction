@@ -5,7 +5,8 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from src.ML_models.draft_model import Draft_Brain
+from src.ML_models.draft_model import DraftBrain
+from src.ML_models.preprocess import preprocess_and_save
 from src.analysis.dataset_analysis import DatasetAnalysis
 from src.dataset import Dataset
 from src.utils.champions_helper import champName_to_champId
@@ -160,14 +161,16 @@ if __name__ == "__main__":
         logger.info("Analysis ended for the restricted dataset")
         logger.info("Now building matches states...")
         matches_states = analysis_patch.build_matches_states()
-        print(matches_states.head(20))
 
-        draft_brain = Draft_Brain(
-            input_dim=985,
-            matchs_states=matches_states,
+        # Process matches to be torch ready and load faster for training
+        preprocess_and_save(matches_states)
+
+        draft_brain = DraftBrain(
+            input_dim=804,
             num_champions=171,
             num_roles=5,
-            batch_size=4096,
+            batch_size=1024,
+            mode="learnable",
         )
 
         draft_brain.train()

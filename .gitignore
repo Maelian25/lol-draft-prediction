@@ -45,6 +45,7 @@ Datasets/
 datasets/
 data/raw/
 data/processed/
+data/reprsentation/*.pt
 
 !example_match.json
 

@@ -2,6 +2,7 @@ from time import perf_counter
 from typing import List, Optional
 import numpy as np
 import pandas as pd
+from sklearn.discriminant_analysis import StandardScaler
 
 from src.analysis.matrices.counter_matrix import CounterAnalysis
 from src.analysis.matrices.synergy_matrix import SynergyAnalysis
@@ -296,6 +297,10 @@ class DatasetAnalysis:
         df["next_side"] = (df["next_side"] == "blue").astype(np.float32)
 
         t_compute_end = perf_counter()
+
+        scaler = StandardScaler()
+        score_cols = ["blue_synergy_score", "red_synergy_score", "counter_score"]
+        df[score_cols] = scaler.fit_transform(df[score_cols])
 
         self.logger.info("Match states generation done. Now saving file...")
         self.logger.info(

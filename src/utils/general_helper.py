@@ -85,6 +85,8 @@ def load_file(location: str, filename: str):
                 data = pd.read_json(full_loc)
             case "parquet":
                 data = pd.read_parquet(full_loc, engine="pyarrow")
+            case "pt":
+                data = torch.load(full_loc)
             case _:
                 logger.info(f"Unable to load file {filename}, returning None.")
                 logger.info(f"Format not supported : {format}.")
