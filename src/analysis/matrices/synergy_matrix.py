@@ -75,8 +75,8 @@ class SynergyAnalysis(BaseAnalysis):
 
         symetry_df = pd.DataFrame(
             synergy_matrix,
-            index=list(self.champ_id_to_idx_map.keys()),
-            columns=list(self.champ_id_to_idx_map.keys()),
+            index=list(self.champ_id_to_idx_map.keys())[:-1],
+            columns=list(self.champ_id_to_idx_map.keys())[:-1],
         )
 
         save_file(symetry_df, MATRICES_FOLDER, SYN_MAT)
@@ -99,7 +99,9 @@ class SynergyAnalysis(BaseAnalysis):
         if synergy_matrix is NoReturn:
             return
 
-        synergy_btw_champs = cast(float, synergy_matrix.loc[champ_id_1, champ_id_2])
+        synergy_btw_champs = cast(
+            float, synergy_matrix.loc[str(champ_id_1), str(champ_id_2)]
+        )
 
         if log:
             self.logger.info(
@@ -119,7 +121,9 @@ class SynergyAnalysis(BaseAnalysis):
             for c in pairs:
                 champ_id_1 = c[0]
                 champ_id_2 = c[1]
-                team_synergy += cast(float, synergy_matrix.loc[champ_id_1, champ_id_2])
+                team_synergy += cast(
+                    float, synergy_matrix.loc[str(champ_id_1), str(champ_id_2)]
+                )
 
             team_synergy /= math.comb(len(team_champs_cleaned), 2)
 
