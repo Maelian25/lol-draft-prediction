@@ -95,17 +95,17 @@ class DraftUnifiedModel(nn.Module):
 
         if mode == "learnable":
             self.champ_embedding = nn.Embedding(num_champions + 1, embed_size)
-            input_dim = 4 * embed_size + 1
+            input_dim = 20 * embed_size + 1
 
         self.logger.info(f"Input dim for {mode} : {input_dim}")
 
         self.shared = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
-            nn.BatchNorm1d(hidden_dim),
+            nn.LayerNorm(hidden_dim),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim, hidden_dim // 2),
-            nn.BatchNorm1d(hidden_dim // 2),
+            nn.LayerNorm(hidden_dim // 2),
             nn.ReLU(),
         )
 
@@ -116,7 +116,7 @@ class DraftUnifiedModel(nn.Module):
 
     def encode_team(self, champ_ids):
         emb = self.champ_embedding(champ_ids)
-        return emb.mean(dim=1)
+        return emb.view(emb.shape[0], -1)
 
     def forward(
         self, X_static, blue_picks, red_picks, blue_bans, red_bans, side, phase
@@ -139,7 +139,7 @@ class DraftUnifiedModel(nn.Module):
         pick_logits = self.pick_head(shared)
         ban_logits = self.ban_head(shared)
         role_logits = self.role_head(shared)
-        winrate = torch.sigmoid(self.wr_head(shared))
+        winrate = self.wr_head(shared)
 
         champ_logits = torch.where(phase.unsqueeze(1) == 1, pick_logits, ban_logits)
 
@@ -212,7 +212,7 @@ class DraftBrain:
 
         self.loss_champ = nn.CrossEntropyLoss()
         self.loss_role = nn.CrossEntropyLoss()
-        self.loss_wr = nn.MSELoss()
+        self.loss_wr = nn.BCEWithLogitsLoss()
 
     def train(self, num_epochs=10):
 
