@@ -106,6 +106,7 @@ class DatasetAnalysis:
         t_compute_start = perf_counter()
         champion_embeddings = self.get_champion_embeddings()
         champ_id_to_idx = champ_id_to_idx_map()
+        pad_idx = champ_id_to_idx["PAD"]
         t_compute_end = perf_counter()
 
         self.logger.info(
@@ -155,13 +156,13 @@ class DatasetAnalysis:
             bans = getattr(match, "bans")
             blue_side_win = getattr(match, "blue_side_win")
 
-            blue_bans = np.zeros(5, dtype=np.int32)
-            blue_picks = np.zeros(5, dtype=np.int32)
-            red_bans = np.zeros(5, dtype=np.int32)
-            red_picks = np.zeros(5, dtype=np.int32)
-            blue_roles = np.zeros(5, dtype=np.int32)
-            red_roles = np.zeros(5, dtype=np.int32)
-            availability_mask = np.ones(self.champion_stats.n_champs, dtype=np.float32)
+            blue_bans = np.full(5, pad_idx, dtype=np.int32, device="cpu")
+            blue_picks = np.full(5, pad_idx, dtype=np.int32, device="cpu")
+            red_bans = np.full(5, pad_idx, dtype=np.int32, device="cpu")
+            red_picks = np.full(5, pad_idx, dtype=np.int32, device="cpu")
+            blue_roles = np.ones(5, dtype=np.int32)
+            red_roles = np.ones(5, dtype=np.int32)
+            champ_availability = np.ones(self.champion_stats.n_champs, dtype=np.float32)
 
             blue_picks_embed = np.zeros(5 * embed_dim, np.float32)
             red_picks_embed = np.zeros(5 * embed_dim, np.float32)
@@ -183,22 +184,26 @@ class DatasetAnalysis:
                     record = {
                         "match_id": match_id,
                         "step": step,
+                        "blue_picks": blue_picks.copy(),
                         "blue_picks_embed": blue_picks_embed.copy(),
+                        "red_picks": red_picks.copy(),
                         "red_picks_embed": red_picks_embed.copy(),
+                        "blue_bans": blue_bans.copy(),
                         "blue_bans_embed": blue_bans_embed.copy(),
+                        "red_bans": red_bans.copy(),
                         "red_bans_embed": red_bans_embed.copy(),
-                        "blue_roles_filled": blue_roles.copy(),
-                        "red_roles_filled": red_roles.copy(),
-                        "availability": availability_mask.copy(),
+                        "blue_roles_available": blue_roles.copy(),
+                        "red_roles_available": red_roles.copy(),
+                        "champ_availability": champ_availability.copy(),
                         "blue_synergy_score": self.synergy.team_synergy_score(
-                            self.synergy_matrix, blue_picks, log=False
+                            self.synergy_matrix, blue_picks, is_idx=True, log=False
                         ),
                         "red_synergy_score": self.synergy.team_synergy_score(
-                            self.synergy_matrix, red_picks, log=False
+                            self.synergy_matrix, red_picks, is_idx=True, log=False
                         ),
                         # how much blue team counters red team
                         "counter_score": self.counter.team_counter_score(
-                            self.counter_matrix, blue_picks, red_picks
+                            self.counter_matrix, blue_picks, red_picks, is_idx=True
                         ),
                         "next_phase": phase_type,
                         "next_side": side,
@@ -239,27 +244,24 @@ class DatasetAnalysis:
 
                     # Ban phases
                     if phase_type == "ban":
-                        ban_info = bans[val] if side == "blue" else picks[val + 5]
+                        ban_info = bans[val] if side == "blue" else bans[val + 5]
                         champ_id = ban_info["championId"]
+                        champ_idx = champ_id_to_idx[str(champ_id)]
 
                         champ_embed = champion_embeddings[champ_id].values.astype(
                             np.float32
                         )
 
                         if side == "blue":
-                            blue_bans[val] = champ_id
+                            blue_bans[val] = champ_idx
 
-                            availability_mask[
-                                champ_id_to_idx[bans[val]["championId"]]
-                            ] = 0
+                            champ_availability[champ_idx] = 0
 
                             blue_bans_embed[start:end] = champ_embed
                         else:
-                            red_bans[val] = bans[val + 5]["championId"]
+                            red_bans[val] = champ_idx
 
-                            availability_mask[
-                                champ_id_to_idx[bans[val + 5]["championId"]]
-                            ] = 0
+                            champ_availability[champ_idx] = 0
 
                             red_bans_embed[start:end] = champ_embed
                     # Pick phases
@@ -268,23 +270,24 @@ class DatasetAnalysis:
 
                         role_idx = ROLE_MAP[pick_info["position"]] - 1
                         champ_id = pick_info["championId"]
+                        champ_idx = champ_id_to_idx[str(champ_id)]
 
                         champ_embed = champion_embeddings[champ_id].values.astype(
                             np.float32
                         )
 
                         if side == "red":
-                            red_roles[role_idx] = 1
-                            red_picks[val] = champ_id
+                            red_roles[role_idx] = 0
+                            red_picks[val] = champ_idx
 
-                            availability_mask[champ_id_to_idx[champ_id]] = 0
+                            champ_availability[champ_idx] = 0
 
                             red_picks_embed[start:end] = champ_embed
                         else:
-                            blue_roles[role_idx] = 1
-                            blue_picks[val] = champ_id
+                            blue_roles[role_idx] = 0
+                            blue_picks[val] = champ_idx
 
-                            availability_mask[champ_id_to_idx[champ_id]] = 0
+                            champ_availability[champ_idx] = 0
 
                             blue_picks_embed[start:end] = champ_embed
 

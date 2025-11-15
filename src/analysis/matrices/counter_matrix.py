@@ -178,18 +178,32 @@ class CounterAnalysis(BaseAnalysis):
 
         return counter_matrix_df
 
-    def team_counter_score(self, counter_matrix: pd.DataFrame, blue_team, red_team):
+    def team_counter_score(
+        self, counter_matrix: pd.DataFrame, blue_team, red_team, is_idx=False
+    ):
         counter_score = 0.0
-        blue_team_cleaned = [champs for champs in blue_team if champs != 0]
-        red_team_cleaned = [champs for champs in red_team if champs != 0]
+        blue_team_cleaned = [
+            champ for champ in blue_team if champ != (len(self.champ_id_to_idx_map) - 1)
+        ]
+        red_team_cleaned = [
+            champ for champ in red_team if champ != (len(self.champ_id_to_idx_map) - 1)
+        ]
         i = 0
+
+        if is_idx:
+            blue_team_cleaned = [
+                self.idx_to_champ_id_map[champ] for champ in blue_team_cleaned
+            ]
+            red_team_cleaned = [
+                self.idx_to_champ_id_map[champ] for champ in red_team_cleaned
+            ]
 
         if len(blue_team_cleaned + red_team_cleaned) < 2:
             return counter_score
         for blue_champ in blue_team_cleaned:
             for red_champ in red_team_cleaned:
                 i += 1
-                counter_score += counter_matrix[blue_champ][red_champ]
+                counter_score += counter_matrix[int(blue_champ)][int(red_champ)]
 
         counter_score /= i
 

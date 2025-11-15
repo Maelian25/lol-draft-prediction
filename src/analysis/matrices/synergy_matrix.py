@@ -112,10 +112,21 @@ class SynergyAnalysis(BaseAnalysis):
 
         return synergy_btw_champs
 
-    def team_synergy_score(self, synergy_matrix: pd.DataFrame, team_champs, log=True):
+    def team_synergy_score(
+        self, synergy_matrix: pd.DataFrame, team_champs, is_idx=False, log=True
+    ):
         """Returns team synergy score"""
         team_synergy = 0.0
-        team_champs_cleaned = [champs for champs in team_champs if champs != 0]
+        team_champs_cleaned = [
+            champ
+            for champ in team_champs
+            if champ != (len(self.champ_id_to_idx_map) - 1)
+        ]
+
+        if is_idx:
+            team_champs_cleaned = [
+                self.idx_to_champ_id_map[champ] for champ in team_champs_cleaned
+            ]
         if len(team_champs_cleaned) > 1:
             pairs = itertools.combinations(team_champs_cleaned, 2)
             for c in pairs:

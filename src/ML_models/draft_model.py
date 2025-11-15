@@ -44,9 +44,9 @@ class Draft_Dataset(Dataset):
         red_bans = np.stack(data["red_bans_embed"].to_list())
 
         # 171 + 10 + 10 features here
-        availability = np.stack(data["availability"].tolist())
-        blue_roles = np.stack(data["blue_roles_filled"].to_list())
-        red_roles = np.stack(data["red_roles_filled"].to_list())
+        availability = np.stack(data["champ_availability"].tolist())
+        blue_roles = np.stack(data["blue_roles_available"].to_list())
+        red_roles = np.stack(data["red_roles_available"].to_list())
 
         scaler = StandardScaler()
         score_cols = ["blue_synergy_score", "red_synergy_score", "counter_score"]
