@@ -213,7 +213,7 @@ class DatasetAnalysis:
                         )
                         record.update(
                             {
-                                "target_ban": champ_id_to_idx[target_ban],
+                                "target_ban": champ_id_to_idx[str(target_ban)],
                                 "target_pick": np.nan,
                                 "target_role": np.nan,
                             }
@@ -226,7 +226,7 @@ class DatasetAnalysis:
                         record.update(
                             {
                                 "target_ban": np.nan,
-                                "target_pick": champ_id_to_idx[target_pick],
+                                "target_pick": champ_id_to_idx[str(target_pick)],
                                 "target_role": ROLE_MAP[target_role] - 1,
                             }
                         )

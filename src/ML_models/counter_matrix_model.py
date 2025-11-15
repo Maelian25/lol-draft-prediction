@@ -104,7 +104,9 @@ class BTFeatureCounter:
         features_dict = torch.tensor(
             np.stack([champ_features[c] for c in champs]), dtype=torch.float32
         )
-        indexes = torch.tensor([champ_id_to_idx[c] for c in champs], dtype=torch.long)
+        indexes = torch.tensor(
+            [champ_id_to_idx[str(c)] for c in champs], dtype=torch.long
+        )
         P = np.zeros((n, n), dtype=np.float32)
         with torch.no_grad():
             for a in range(n):

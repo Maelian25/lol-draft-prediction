@@ -42,8 +42,11 @@ def get_champions_data() -> dict:
 def champ_id_to_idx_map():
     """Provide mapping btw champ id and idx"""
     champ_id_to_idx_map = {
-        champ: idx for idx, champ in enumerate(get_champions_id_name_map().keys())
+        str(champ): idx for idx, champ in enumerate(get_champions_id_name_map().keys())
     }
+
+    pad_idx = len(champ_id_to_idx_map)
+    champ_id_to_idx_map["PAD"] = pad_idx
 
     return champ_id_to_idx_map
 

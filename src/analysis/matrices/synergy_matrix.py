@@ -41,12 +41,12 @@ class SynergyAnalysis(BaseAnalysis):
                 continue
 
             blue_team_champs = [
-                self.champ_id_to_idx_map[p["championId"]]
+                self.champ_id_to_idx_map[str(p["championId"])]
                 for p in picks
                 if p["side"] == "blue"
             ]
             red_team_champs = [
-                self.champ_id_to_idx_map[p["championId"]]
+                self.champ_id_to_idx_map[str(p["championId"])]
                 for p in picks
                 if p["side"] == "red"
             ]

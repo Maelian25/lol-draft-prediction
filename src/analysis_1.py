@@ -633,12 +633,12 @@ class DatasetAnalysis:
                 continue
 
             blue_team_champs = [
-                self.champ_id_to_idx_map[p["championId"]]
+                self.champ_id_to_idx_map[str(p["championId"])]
                 for p in picks
                 if p["side"] == "blue"
             ]
             red_team_champs = [
-                self.champ_id_to_idx_map[p["championId"]]
+                self.champ_id_to_idx_map[str(p["championId"])]
                 for p in picks
                 if p["side"] == "red"
             ]
@@ -694,12 +694,12 @@ class DatasetAnalysis:
             picks = getattr(match, "picks", [])
 
             blue_team_champs = [
-                self.champ_id_to_idx_map[p["championId"]]
+                self.champ_id_to_idx_map[str(p["championId"])]
                 for p in picks
                 if p["side"] == "blue"
             ]
             red_team_champs = [
-                self.champ_id_to_idx_map[p["championId"]]
+                self.champ_id_to_idx_map[str(p["championId"])]
                 for p in picks
                 if p["side"] == "red"
             ]
@@ -958,13 +958,15 @@ class DatasetAnalysis:
                             blue_bans[val] = bans[val]["championId"]
 
                             availability_mask[
-                                self.champ_id_to_idx_map[bans[val]["championId"]]
+                                self.champ_id_to_idx_map[str(bans[val]["championId"])]
                             ] = 0
                         else:
                             red_bans[val] = bans[val + 5]["championId"]
 
                             availability_mask[
-                                self.champ_id_to_idx_map[bans[val + 5]["championId"]]
+                                self.champ_id_to_idx_map[
+                                    str(bans[val + 5]["championId"])
+                                ]
                             ] = 0
                     # Pick phases
                     else:
@@ -983,14 +985,18 @@ class DatasetAnalysis:
                             red_roles[role_idx] = 1
                             red_picks[val] = champ_id
 
-                            availability_mask[self.champ_id_to_idx_map[champ_id]] = 0
+                            availability_mask[
+                                self.champ_id_to_idx_map[str(champ_id)]
+                            ] = 0
 
                             red_embed_flat[start:end] = champ_embed
                         else:
                             blue_roles[role_idx] = 1
                             blue_picks[val] = champ_id
 
-                            availability_mask[self.champ_id_to_idx_map[champ_id]] = 0
+                            availability_mask[
+                                self.champ_id_to_idx_map[str(champ_id)]
+                            ] = 0
 
                             blue_embed_flat[start:end] = champ_embed
 
