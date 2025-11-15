@@ -4,95 +4,108 @@ from sklearn.model_selection import train_test_split
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
-from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
 from src.utils.logger_config import get_logger
 
 
-class Draft_Dataset(Dataset):
+class DraftDataset(Dataset):
 
     def __init__(self, matchs_states: pd.DataFrame):
-        (
-            self.X,
-            self.phase_flag,
-            self.y_champ_pick,
-            self.y_champ_ban,
-            self.y_role,
-            self.y_wr,
-        ) = self.__build_vectors(matchs_states)
+
+        self.match_states = matchs_states
+        self.__build_vectors()
 
     def __len__(self):
-        return self.X.shape[0]
+        return len(self.match_states)
 
     def __getitem__(self, idx):
-        return (
-            self.X[idx],
-            self.phase_flag[idx],
-            self.y_champ_pick[idx],
-            self.y_champ_ban[idx],
-            self.y_role[idx],
-            self.y_wr[idx],
-        )
-
-    def __build_vectors(self, data: pd.DataFrame):
-
-        # 800 features here
-        blue_picks = np.stack(data["blue_picks_embed"].to_list())
-        red_picks = np.stack(data["red_picks_embed"].to_list())
-        blue_bans = np.stack(data["blue_bans_embed"].to_list())
-        red_bans = np.stack(data["red_bans_embed"].to_list())
-
-        # 171 + 10 + 10 features here
-        availability = np.stack(data["champ_availability"].tolist())
-        blue_roles = np.stack(data["blue_roles_available"].to_list())
-        red_roles = np.stack(data["red_roles_available"].to_list())
-
-        scaler = StandardScaler()
-        score_cols = ["blue_synergy_score", "red_synergy_score", "counter_score"]
-        data[score_cols] = scaler.fit_transform(data[score_cols])
-
-        # 4 features here
-        blue_synergy_score = (
-            data["blue_synergy_score"].to_numpy(dtype=np.float32).reshape(-1, 1)
-        )
-        red_synergy_score = (
-            data["red_synergy_score"].to_numpy(dtype=np.float32).reshape(-1, 1)
-        )
-        counter_score = data["counter_score"].to_numpy(dtype=np.float32).reshape(-1, 1)
-        side = data["next_side"].to_numpy(dtype=np.float32).reshape(-1, 1)
-
-        X = np.hstack(
+        X_static = torch.cat(
             [
-                blue_picks,
-                red_picks,
-                blue_bans,
-                red_bans,
-                availability,
-                blue_roles,
-                red_roles,
-                blue_synergy_score,
-                red_synergy_score,
-                counter_score,
-                side,
-            ]
+                self.blue_picks_emb[idx],
+                self.red_picks_emb[idx],
+                self.blue_bans_emb[idx],
+                self.red_bans_emb[idx],
+                self.blue_syn[idx],
+                self.red_syn[idx],
+                self.counter[idx],
+                self.side[idx],
+            ],
+            dim=0,
         )
+
         return (
-            torch.tensor(X, dtype=torch.float32),
-            torch.tensor(data["next_phase"].to_numpy(), dtype=torch.float32),
-            torch.tensor(data["target_pick"].to_numpy(), dtype=torch.long),
-            torch.tensor(data["target_ban"].to_numpy(), dtype=torch.long),
-            torch.tensor(data["target_role"].to_numpy(), dtype=torch.long),
-            torch.tensor(data["target_winrate"].to_numpy(), dtype=torch.float32),
+            X_static,
+            self.blue_picks_idxs[idx],
+            self.red_picks_idxs[idx],
+            self.blue_bans_idxs[idx],
+            self.red_bans_idxs[idx],
+            self.side[idx],
+            self.phase[idx],
+            self.t_pick[idx],
+            self.t_ban[idx],
+            self.t_role[idx],
+            self.t_wr[idx],
         )
 
+    def __build_vectors(self):
 
-class Draft_Unified_Model(nn.Module):
+        def list_to_tensor(col, dtype=torch.float32):
+            return torch.tensor(np.stack(self.match_states[col].to_list()), dtype=dtype)
+
+        def value_to_tensor(col, dtype=torch.float32):
+            return torch.tensor(self.match_states[col].values, dtype=dtype)
+
+        self.blue_picks_emb = list_to_tensor("blue_picks_embed", dtype=torch.float32)
+        self.red_picks_emb = list_to_tensor("red_picks_embed", dtype=torch.float32)
+        self.blue_bans_emb = list_to_tensor("blue_bans_embed", dtype=torch.float32)
+        self.red_bans_emb = list_to_tensor("red_bans_embed", dtype=torch.float32)
+
+        self.blue_picks_idxs = list_to_tensor("blue_picks", dtype=torch.long)
+        self.red_picks_idxs = list_to_tensor("red_picks", dtype=torch.long)
+        self.blue_bans_idxs = list_to_tensor("blue_bans", dtype=torch.long)
+        self.red_bans_idxs = list_to_tensor("red_bans", dtype=torch.long)
+
+        self.blue_syn = value_to_tensor(
+            "blue_synergy_score", dtype=torch.float32
+        ).unsqueeze(1)
+        self.red_syn = value_to_tensor(
+            "red_synergy_score", dtype=torch.float32
+        ).unsqueeze(1)
+        self.counter = value_to_tensor("counter_score", dtype=torch.float32).unsqueeze(
+            1
+        )
+        self.side = value_to_tensor("next_side", dtype=torch.float32).unsqueeze(1)
+        self.phase = value_to_tensor("next_phase", dtype=torch.float32)
+
+        self.t_pick = value_to_tensor("target_pick", dtype=torch.long)
+        self.t_ban = value_to_tensor("target_ban", dtype=torch.long)
+        self.t_role = value_to_tensor("target_role", dtype=torch.long)
+        self.t_wr = value_to_tensor("target_winrate", dtype=torch.float32)
+
+
+class DraftUnifiedModel(nn.Module):
 
     def __init__(
-        self, input_dim, num_champions, num_roles, hidden_dim=512, dropout=0.3
+        self,
+        num_champions,
+        num_roles,
+        input_dim=0,
+        hidden_dim=512,
+        dropout=0.3,
+        mode="static",
+        embed_size=64,
     ) -> None:
         super().__init__()
+
+        self.logger = get_logger(self.__class__.__name__, "draft_training.log")
+        self.mode = mode
+
+        if mode == "learnable":
+            self.champ_embedding = nn.Embedding(num_champions + 1, embed_size)
+            input_dim = 4 * embed_size + 1
+
+        self.logger.info(f"Input dim for {mode} : {input_dim}")
 
         self.shared = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -109,7 +122,26 @@ class Draft_Unified_Model(nn.Module):
         self.role_head = nn.Linear(hidden_dim // 2, num_roles)
         self.wr_head = nn.Linear(hidden_dim // 2, 1)
 
-    def forward(self, X, phase_flag):
+    def encode_team(self, champ_ids):
+        emb = self.champ_embedding(champ_ids)
+        return emb.mean(dim=1)
+
+    def forward(
+        self, X_static, blue_picks, red_picks, blue_bans, red_bans, side, phase
+    ):
+
+        if self.mode == "learnable":
+            blue_picks_emb = self.encode_team(blue_picks)
+            red_picks_emb = self.encode_team(red_picks)
+            blue_bans_emb = self.encode_team(blue_bans)
+            red_bans_emb = self.encode_team(red_bans)
+
+            X = torch.cat(
+                [blue_picks_emb, red_picks_emb, blue_bans_emb, red_bans_emb, side],
+                dim=1,
+            )
+        else:
+            X = X_static
 
         shared = self.shared(X)
         pick_logits = self.pick_head(shared)
@@ -117,12 +149,12 @@ class Draft_Unified_Model(nn.Module):
         role_logits = self.role_head(shared)
         winrate = torch.sigmoid(self.wr_head(shared))
 
-        out_champ = torch.where(phase_flag.unsqueeze(1).bool(), pick_logits, ban_logits)
+        champ_logits = torch.where(phase.unsqueeze(1) == 1, pick_logits, ban_logits)
 
-        return out_champ, role_logits, winrate
+        return champ_logits, role_logits, winrate
 
 
-class Draft_Brain:
+class DraftBrain:
 
     def __init__(
         self,
@@ -133,110 +165,92 @@ class Draft_Brain:
         batch_size=1024,
         hidden_dim=512,
         dropout=0.3,
+        mode="static",
         device="cuda" if torch.cuda.is_available() else "cpu",
     ) -> None:
 
         self.device = device
 
-        print("PyTorch version:", torch.__version__)
-        print("CUDA available:", torch.cuda.is_available())
-        print(
-            "GPU name:",
-            torch.cuda.get_device_name(0) if torch.cuda.is_available() else "No GPU",
+        self.logger = get_logger(self.__class__.__name__, "draft_training.log")
+
+        self.logger.info(f"PyTorch version: {torch.__version__}")
+        self.logger.info(f"CUDA available:  {torch.cuda.is_available()}")
+        gpu_name = (
+            torch.cuda.get_device_name(0) if torch.cuda.is_available() else "No GPU"
         )
+        self.logger.info(f"GPU name:{gpu_name}")
 
         train_df, val_df = train_test_split(
             matchs_states, test_size=0.2, random_state=42
         )
+        train_ds = DraftDataset(train_df)
+        val_ds = DraftDataset(val_df)
 
-        train_dataset = Draft_Dataset(train_df)
-        val_dataset = Draft_Dataset(val_df)
-        self.input_dim = input_dim
-
-        self.model = nn.Module()
-        self.model = Draft_Unified_Model(
-            self.input_dim, num_champions, num_roles, hidden_dim, dropout
-        ).to(device)
-
-        self.train_dataloader = DataLoader(
-            train_dataset,
+        self.train_loader = DataLoader(
+            train_ds,
             batch_size=batch_size,
             shuffle=True,
-            num_workers=8,
-            pin_memory=True,
-            persistent_workers=True,
         )
-        self.val_dataloader = DataLoader(
-            val_dataset, batch_size=batch_size, shuffle=True
-        )
+        self.val_loader = DataLoader(val_ds, batch_size=batch_size)
 
-        self.logger = get_logger(self.__class__.__name__, "draft_training.log")
+        self.model = DraftUnifiedModel(
+            num_champions=num_champions,
+            num_roles=num_roles,
+            input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            dropout=dropout,
+            mode=mode,
+        ).to(device)
 
-    def train(self, num_epochs=10, lr=1e-3):
+        self.logger.info(f"Parameters used : Batch size = {batch_size} | Mode = {mode}")
 
-        self.logger.info(f"Training on {self.device} | Input dim = {self.input_dim}")
+        self.opt = torch.optim.AdamW(self.model.parameters(), lr=1e-3)
 
-        champ_loss_fn = nn.CrossEntropyLoss()
-        role_loss_fn = nn.CrossEntropyLoss()
-        winrate_loss_fn = nn.MSELoss()
-        optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr)
+        self.loss_champ = nn.CrossEntropyLoss()
+        self.loss_role = nn.CrossEntropyLoss()
+        self.loss_wr = nn.MSELoss()
+
+    def train(self, num_epochs=10):
+
+        self.logger.info("Started training")
 
         for epoch in range(num_epochs):
             self.model.train()
             total_loss = 0.0
 
-            for X, phase, y_pick, y_ban, y_role, y_wr in tqdm(
-                self.train_dataloader, desc="train", leave=False
-            ):
+            for batch in tqdm(self.train_loader):
 
-                X, phase = X.to(self.device), phase.to(self.device)
-                y_pick, y_ban, y_role, y_wr = (
-                    y_pick.to(self.device),
-                    y_ban.to(self.device),
-                    y_role.to(self.device),
-                    y_wr.to(self.device),
+                (X, bp, rp, bb, rb, side, phase, y_pick, y_ban, y_role, y_wr) = [
+                    b.to(self.device, non_blocking=True) for b in batch
+                ]
+
+                self.opt.zero_grad()
+
+                champ_logits, role_logits, wr_pred = self.model(
+                    X, bp, rp, bb, rb, side, phase
                 )
 
-                optimizer.zero_grad()
-                champ_logits, role_logits, winrate_pred = self.model(X, phase)
+                y_champ = torch.where(phase == 1, y_pick, y_ban)
 
-                # --- Champ loss ---
-                y_champ = torch.where(phase == 1, y_pick, y_ban).long()
+                loss_c = self.loss_champ(champ_logits, y_champ)
 
-                loss_champ = champ_loss_fn(champ_logits, y_champ)
+                mask = phase == 1
 
-                # --- Role loss & Winrate loss (pick phase only) ---
-                is_pick = phase == 1
-                winrate_pred_selected = winrate_pred[is_pick].float()
+                loss_r = (
+                    self.loss_role(role_logits[mask], y_role[mask])
+                    if mask.any()
+                    else 0.0
+                )
+                loss_w = (
+                    self.loss_wr(wr_pred[mask].squeeze(-1), y_wr[mask])
+                    if mask.any()
+                    else 0.0
+                )
 
-                winrate_pred_selected = winrate_pred_selected.squeeze(-1)
-
-                y_wr_selected = y_wr[is_pick].float()
-
-                # Role loss
-                if is_pick.any():
-                    loss_role = role_loss_fn(
-                        role_logits[is_pick], y_role[is_pick].long()
-                    )
-                else:
-                    loss_role = 0.0
-
-                # Winrate loss
-                if is_pick.any():
-                    winrate_pred_selected = winrate_pred[is_pick].squeeze(-1).float()
-                    y_wr_selected = y_wr[is_pick].float()
-                    loss_wr = winrate_loss_fn(winrate_pred_selected, y_wr_selected)
-                else:
-                    loss_wr = 0.0
-
-                # Total loss
-                loss = loss_champ + 0.5 * loss_role + 0.2 * loss_wr
+                loss = loss_c + 0.5 * loss_r + 0.2 * loss_w
                 loss.backward()
-                optimizer.step()
+                self.opt.step()
 
                 total_loss += loss.item()
 
-            print(
-                f"Epoch [{epoch+1}/{num_epochs}] - "
-                f"Loss: {total_loss / len(self.train_dataloader):.4f}"
-            )
+            print(f"Epoch {epoch+1}: loss={total_loss/len(self.train_loader):.4f}")
