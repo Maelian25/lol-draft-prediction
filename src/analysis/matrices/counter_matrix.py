@@ -144,7 +144,7 @@ class CounterAnalysis(BaseAnalysis):
             X_1 = torch.tensor(
                 np.stack(
                     [
-                        champ_features[r["champ_id_1"]]
+                        champ_features[int(r["champ_id_1"])]
                         for _, r in pairs_data_df.iterrows()
                     ]
                 ),
@@ -153,7 +153,7 @@ class CounterAnalysis(BaseAnalysis):
             X_2 = torch.tensor(
                 np.stack(
                     [
-                        champ_features[r["champ_id_2"]]
+                        champ_features[int(r["champ_id_2"])]
                         for _, r in pairs_data_df.iterrows()
                     ]
                 ),

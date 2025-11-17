@@ -74,7 +74,7 @@ class DatasetAnalysis:
                     np.array(
                         [
                             self.counter_matrix[champ_id].mean(),
-                            self.synergy_matrix[champ_id].mean(),
+                            self.synergy_matrix[str(champ_id)].mean(),
                         ]
                     ),
                 ]
