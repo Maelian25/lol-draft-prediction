@@ -261,6 +261,9 @@ class DraftBrain:
             total_loss_r = 0.0
             total_loss_w = 0.0
 
+            count_role_batches = 0
+            count_wr_batches = 0
+
             for batch in tqdm(self.train_loader):
 
                 (
@@ -286,34 +289,114 @@ class DraftBrain:
                     X, bp, rp, bb, rb, champ_mask, b_role_mask, r_role_mask, side, phase
                 )
 
+                # Champ loss
                 y_champ = torch.where(phase == 1, y_pick, y_ban)
-
                 loss_c = self.loss_champ(champ_logits, y_champ)
+                total_loss_c += loss_c.item()
 
                 mask = phase == 1
 
-                loss_r = (
-                    self.loss_role(role_logits[mask], y_role[mask])
-                    if mask.any()
-                    else 0.0
-                )
-                loss_w = (
-                    self.loss_wr(wr_pred[mask].squeeze(-1), y_wr[mask])
-                    if mask.any()
-                    else 0.0
-                )
+                # role loss and winrate loss
+                if mask.any():
+                    loss_r = self.loss_role(role_logits[mask], y_role[mask])
+                    total_loss_r += loss_r.item()
+                    count_role_batches += 1
+
+                    loss_w = self.loss_wr(wr_pred[mask].squeeze(-1), y_wr[mask])
+                    total_loss_w += loss_w.item()
+                    count_wr_batches += 1
+                else:
+                    loss_r = 0.0
+                    loss_w = 0.0
 
                 loss = loss_c + 0.5 * loss_r + 0.2 * loss_w
                 loss.backward()
                 self.opt.step()
 
-                total_loss_c += loss_c
-                total_loss_r += loss_r
-                total_loss_w += loss_w
                 total_loss += loss.item()
 
-            print(f"Losses for Epoch {epoch+1}:")
-            print(f"champ_loss={total_loss_c/len(self.train_loader):.4f}")
-            print(f"role_loss={total_loss_r/len(self.train_loader):.4f}")
-            print(f"wr_loss={total_loss_w/len(self.train_loader):.4f}")
-            print(f"total_loss={total_loss/len(self.train_loader):.4f}")
+            avg_total = total_loss / len(self.train_loader)
+            avg_c = total_loss_c / len(self.train_loader)
+            avg_r = total_loss_r / max(1, count_role_batches)
+            avg_w = total_loss_w / max(1, count_wr_batches)
+
+            self.logger.info(f"Training losses for Epoch {epoch + 1}:")
+            self.logger.info(f"champ_loss={avg_c:.4f}")
+            self.logger.info(f"role_loss={avg_r:.4f}")
+            self.logger.info(f"wr_loss={avg_w:.4f}")
+            self.logger.info(f"total_loss={avg_total:.4f}")
+
+            self.evaluate(epoch=epoch)
+
+    def evaluate(self, epoch):
+
+        self.model.eval()
+
+        with torch.no_grad():
+
+            total_loss = 0.0
+            total_loss_c = 0.0
+            total_loss_r = 0.0
+            total_loss_w = 0.0
+
+            count_role_batches = 0
+            count_wr_batches = 0
+
+            for batch in tqdm(self.val_loader):
+
+                (
+                    X,
+                    bp,
+                    rp,
+                    bb,
+                    rb,
+                    champ_mask,
+                    b_role_mask,
+                    r_role_mask,
+                    side,
+                    phase,
+                    y_pick,
+                    y_ban,
+                    y_role,
+                    y_wr,
+                ) = [b.to(self.device, non_blocking=True) for b in batch]
+
+                # forward
+                champ_logits, role_logits, wr_pred = self.model(
+                    X, bp, rp, bb, rb, champ_mask, b_role_mask, r_role_mask, side, phase
+                )
+
+                # champion loss
+                y_champ = torch.where(phase == 1, y_pick, y_ban)
+                loss_c = self.loss_champ(champ_logits, y_champ)
+                total_loss_c += loss_c.item()
+
+                # phase mask
+                mask = phase == 1
+
+                # role loss and winrate loss
+                if mask.any():
+                    loss_r = self.loss_role(role_logits[mask], y_role[mask])
+                    total_loss_r += loss_r.item()
+                    count_role_batches += 1
+
+                    loss_w = self.loss_wr(wr_pred[mask].squeeze(-1), y_wr[mask])
+                    total_loss_w += loss_w.item()
+                    count_wr_batches += 1
+                else:
+                    loss_r = 0.0
+                    loss_w = 0.0
+
+                loss = loss_c + 0.5 * loss_r + 0.2 * loss_w
+                total_loss += loss.item()
+
+            avg_total = total_loss / len(self.val_loader)
+            avg_c = total_loss_c / len(self.val_loader)
+            avg_r = total_loss_r / max(1, count_role_batches)
+            avg_w = total_loss_w / max(1, count_wr_batches)
+
+            self.logger.info(f"Validation losses for Epoch {epoch + 1}:")
+            self.logger.info(f"champ_loss={avg_c:.4f}")
+            self.logger.info(f"role_loss={avg_r:.4f}")
+            self.logger.info(f"wr_loss={avg_w:.4f}")
+            self.logger.info(f"total_loss={avg_total:.4f}")
