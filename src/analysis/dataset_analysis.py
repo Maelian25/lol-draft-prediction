@@ -40,21 +40,22 @@ class DatasetAnalysis:
         self.synergy = SynergyAnalysis(data, patches)
         self.counter = CounterAnalysis(data, patches)
 
-    def get_champion_embeddings(self) -> pd.DataFrame:
+    def get_champion_embeddings(self, rebuild=False) -> pd.DataFrame:
 
-        data_champ_embeds = load_file(DATA_REPRESENTATION_FOLDER, CHAMP_EMBEDS)
-        data_syn_matrix = load_file(MATRICES_FOLDER, SYN_MAT)
-        data_count_matrix = load_file(MATRICES_FOLDER, COUNT_MAT)
+        if not rebuild:
+            data_champ_embeds = load_file(DATA_REPRESENTATION_FOLDER, CHAMP_EMBEDS)
+            data_syn_matrix = load_file(MATRICES_FOLDER, SYN_MAT)
+            data_count_matrix = load_file(MATRICES_FOLDER, COUNT_MAT)
 
-        if data_champ_embeds is not None:
-            if data_syn_matrix is None or data_count_matrix is None:
-                self.counter_matrix = self.counter.compute_counter_matrix()
-                self.synergy_matrix = self.synergy.compute_synergy_matrix()
-            else:
-                self.synergy_matrix = data_syn_matrix
-                self.counter_matrix = data_count_matrix
+            if data_champ_embeds is not None:
+                if data_syn_matrix is None or data_count_matrix is None:
+                    self.counter_matrix = self.counter.compute_counter_matrix()
+                    self.synergy_matrix = self.synergy.compute_synergy_matrix()
+                else:
+                    self.synergy_matrix = data_syn_matrix
+                    self.counter_matrix = data_count_matrix
 
-            return data_champ_embeds
+                return data_champ_embeds
 
         win_rate = self.champion_stats.get_champ_win_rate(plot=False)
         pick_rate = self.champion_stats.get_champ_pick_or_ban_rate(pick=True)
@@ -94,12 +95,13 @@ class DatasetAnalysis:
 
         return champ_embeddings_df
 
-    def build_matches_states(self) -> pd.DataFrame:
+    def build_matches_states(self, rebuild=False) -> pd.DataFrame:
 
-        data = load_file(DATA_REPRESENTATION_FOLDER, DRAFT_STATES_PARQUET)
+        if not rebuild:
+            data = load_file(DATA_REPRESENTATION_FOLDER, DRAFT_STATES_PARQUET)
 
-        if data is not None:
-            return data
+            if data is not None:
+                return data
 
         matches_info = list(dict())
 
