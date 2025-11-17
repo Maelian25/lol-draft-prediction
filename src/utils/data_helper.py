@@ -219,32 +219,30 @@ def replace_wrong_ban(picks: List[dict[Any, Any]], bans: List[dict[Any, Any]]):
     """
 
     champions_id_and_name = get_champions_id_name_map()
-    all_champ_ids = set(champions_id_and_name.keys())
+    all_ids = set(champions_id_and_name.keys())
 
-    used_champ_ids = {p["championId"] for p in picks if p["championId"] != -1} | {
-        b["championId"] for b in bans if b["championId"] != -1
-    }
+    used = {p["championId"] for p in picks}
 
-    bans_dict = set()
-    available_champs = list(all_champ_ids - used_champ_ids)
+    seen_bans = set()
+    available = list(all_ids - used)
 
-    for b in bans:
-        champ_id = b["championId"]
+    for b in bans.copy():
+        bid = b["championId"]
 
-        # Handle missing or duplicate bans
-        if champ_id == -1 or champ_id in bans_dict:
-            if not available_champs:
+        # if missing ban OR duplicate ban OR ban that points to an already-picked champ
+        if bid == -1 or bid in seen_bans or bid in used:
+            if not available:
                 logger.warning("No more available champions to replace bans.")
                 break
 
             # Pick a new random champ from available pool
-            new_champ = random.choice(available_champs)
-
+            new_champ = random.choice(available)
             b["championId"] = new_champ
 
-            # Update used + available tracking
-            used_champ_ids.add(new_champ)
-            available_champs.remove(new_champ)
-            bans_dict.add(new_champ)
+            # Update used and remove champ from available
+            used.add(new_champ)
+            available.remove(new_champ)
         else:
-            bans_dict.add(champ_id)
+            # Available tracking changes as well here
+            seen_bans.add(bid)
+            available.remove(bid)
