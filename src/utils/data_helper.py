@@ -200,12 +200,28 @@ def load_scrapped_data(save_path, regionId, elo) -> Tuple[pd.DataFrame, bool]:
 
 
 def replace_wrong_position(dataset: pd.DataFrame):
-    """Replace positions that would be corrupted in the dataset"""
+    """
+    Replace positions that would be corrupted in the dataset
+    Doing it after data are scrapped
+    """
+
+    every_pos = set(["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "SUPPORT"])
 
     def fix_positions(picks):
-        for pick in picks:
-            if pick.get("position", "") == "":
-                pick["position"] = "SUPPORT"
+        for side in ["blue", "red"]:
+            # teams pick
+            team_picks = [p for p in picks if p.get("side") == side]
+            team_positions = set(
+                [p.get("position") for p in team_picks if p.get("position")]
+            )
+            missing_roles = list(every_pos - team_positions)
+
+            # fill empty positions
+            for p in team_picks:
+                if not p.get("position") and missing_roles:
+                    p["position"] = missing_roles.pop(
+                        0
+                    )  # withdraw from list to avoid duplicates
         return picks
 
     dataset["picks"] = dataset["picks"].apply(fix_positions)
