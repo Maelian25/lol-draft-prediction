@@ -174,7 +174,7 @@ class Dataset:
                     team_id = "blue" if p.get("teamId") == 100 else "red"
                     position = (
                         p.get("teamPosition")
-                        if p.get("teamPosition") != "UTILITY" or ""
+                        if p.get("teamPosition") != "UTILITY"
                         else "SUPPORT"
                     )
                     champ = p.get("championId")
