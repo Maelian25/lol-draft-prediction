@@ -29,13 +29,16 @@ def find_file(filename, search_path):
 
 def save_file(
     data: pd.DataFrame,
-    location: str,
+    location: str | None,
     filename: str,
 ):
-
-    os.makedirs(location, exist_ok=True)
-    format = filename.split(".")[1]
-    full_loc = location + filename
+    if location is None:
+        full_loc = filename
+        format = filename.split(".")[1]
+    else:
+        os.makedirs(location, exist_ok=True)
+        format = filename.split(".")[1]
+        full_loc = location + filename
 
     try:
         match (format):

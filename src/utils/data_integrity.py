@@ -32,4 +32,4 @@ def check_target_intergity(matches_states):
     print(f"Unavailable targets: {len(problem_rows)}")
 
     # Save file
-    save_file(problem_rows, location="", filename="targets_not_in_mask.csv")
+    save_file(problem_rows, location=None, filename="targets_not_in_mask.csv")
