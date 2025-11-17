@@ -42,7 +42,7 @@ def save_file(
             case "csv":
                 data.to_csv(full_loc, index=False)
             case "json":
-                data.to_json(full_loc)
+                data.to_json(full_loc, orient="records", indent=2)
             case "parquet":
                 data.to_parquet(full_loc, engine="pyarrow")
     except Exception as e:
