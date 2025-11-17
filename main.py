@@ -8,7 +8,7 @@ import pandas as pd
 from src.ML_models.draft_model import DraftBrain
 from src.ML_models.preprocess import preprocess_and_save
 from src.analysis.dataset_analysis import DatasetAnalysis
-from src.dataset import Dataset
+from src.data_scrapping.dataset import Dataset
 from src.utils.champions_helper import champName_to_champId
 from src.utils.constants import DATASETS_FOLDER, ELOS, REGIONS, SAVE_AFTER_ITERATION
 from src.utils.data_helper import (
