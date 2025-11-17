@@ -22,6 +22,18 @@ def preprocess_and_save(df: Any):
     blue_bans = torch.tensor(np.stack(df["blue_bans"]), dtype=torch.long)
     red_bans = torch.tensor(np.stack(df["red_bans"]), dtype=torch.long)
 
+    champ_availability = torch.tensor(
+        np.stack(df["champ_availability"]), dtype=torch.long
+    )
+    blue_roles_available = torch.tensor(
+        np.stack(df["blue_roles_available"]), dtype=torch.long
+    )
+    red_roles_available = torch.tensor(
+        np.stack(df["red_roles_available"]), dtype=torch.long
+    )
+
+    champ_availability = expand_mask(champ_availability)
+
     # simple scalars
     blue_syn = torch.tensor(
         df["blue_synergy_score"].values, dtype=torch.float32
@@ -30,10 +42,10 @@ def preprocess_and_save(df: Any):
         df["red_synergy_score"].values, dtype=torch.float32
     ).unsqueeze(1)
     counter = torch.tensor(df["counter_score"].values, dtype=torch.float32).unsqueeze(1)
-    side = torch.tensor(df["next_side"].values, dtype=torch.float32).unsqueeze(1)
+    side = torch.tensor(df["next_side"].values, dtype=torch.long).unsqueeze(1)
 
     # labels
-    phase = torch.tensor(df["next_phase"].values, dtype=torch.float32)
+    phase = torch.tensor(df["next_phase"].values, dtype=torch.long)
     t_pick = torch.tensor(df["target_pick"].values, dtype=torch.long)
     t_ban = torch.tensor(df["target_ban"].values, dtype=torch.long)
     t_role = torch.tensor(df["target_role"].values, dtype=torch.long)
@@ -42,18 +54,26 @@ def preprocess_and_save(df: Any):
     # Save in a single efficient file
     torch.save(
         {
+            # static embedding inputs
             "blue_picks_emb": blue_picks_emb,
             "red_picks_emb": red_picks_emb,
             "blue_bans_emb": blue_bans_emb,
             "red_bans_emb": red_bans_emb,
+            # integer input for learnable embedding mode
             "blue_picks": blue_picks,
             "red_picks": red_picks,
             "blue_bans": blue_bans,
             "red_bans": red_bans,
+            # masks
+            "champ_availability": champ_availability,
+            "blue_roles_available": blue_roles_available,
+            "red_roles_available": red_roles_available,
+            # scalar features
             "blue_syn": blue_syn,
             "red_syn": red_syn,
             "counter": counter,
             "side": side,
+            # supervision labels
             "phase": phase,
             "t_pick": t_pick,
             "t_ban": t_ban,
@@ -64,3 +84,11 @@ def preprocess_and_save(df: Any):
     )
 
     logger.info(f"Preprocessed dataset saved to {save_path}")
+
+
+def expand_mask(mask: torch.Tensor):
+
+    num_rows, _ = mask.shape
+    pad_col = torch.zeros(num_rows, 1, dtype=mask.dtype, device=mask.device)
+
+    return torch.cat([mask, pad_col], dim=1)

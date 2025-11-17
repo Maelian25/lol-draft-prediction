@@ -31,6 +31,10 @@ class DraftDataset(Dataset):
         self.blue_bans = data["blue_bans"]
         self.red_bans = data["red_bans"]
 
+        self.champ_mask = data["champ_availability"]
+        self.blue_roles_mask = data["blue_roles_available"]
+        self.red_roles_mask = data["red_roles_available"]
+
         self.blue_syn = data["blue_syn"]
         self.red_syn = data["red_syn"]
         self.counter = data["counter"]
@@ -67,6 +71,9 @@ class DraftDataset(Dataset):
             self.red_picks[idx],
             self.blue_bans[idx],
             self.red_bans[idx],
+            self.champ_mask[idx],
+            self.blue_roles_mask[idx],
+            self.red_roles_mask[idx],
             self.side[idx],
             self.phase[idx],
             self.t_pick[idx],
@@ -94,7 +101,9 @@ class DraftUnifiedModel(nn.Module):
         self.mode = mode
 
         if mode == "learnable":
-            self.champ_embedding = nn.Embedding(num_champions + 1, embed_size)
+            self.champ_embedding = nn.Embedding(
+                num_champions + 1, embed_size, padding_idx=num_champions
+            )
             input_dim = 20 * embed_size + 1
 
         self.logger.info(f"Input dim for {mode} : {input_dim}")
@@ -109,8 +118,8 @@ class DraftUnifiedModel(nn.Module):
             nn.ReLU(),
         )
 
-        self.pick_head = nn.Linear(hidden_dim // 2, num_champions)
-        self.ban_head = nn.Linear(hidden_dim // 2, num_champions)
+        self.pick_head = nn.Linear(hidden_dim // 2, num_champions + 1)
+        self.ban_head = nn.Linear(hidden_dim // 2, num_champions + 1)
         self.role_head = nn.Linear(hidden_dim // 2, num_roles)
         self.wr_head = nn.Linear(hidden_dim // 2, 1)
 
@@ -119,7 +128,17 @@ class DraftUnifiedModel(nn.Module):
         return emb.view(emb.shape[0], -1)
 
     def forward(
-        self, X_static, blue_picks, red_picks, blue_bans, red_bans, side, phase
+        self,
+        X_static,
+        blue_picks,
+        red_picks,
+        blue_bans,
+        red_bans,
+        champ_mask,
+        b_role_mask,
+        r_role_mask,
+        side,
+        phase,
     ):
 
         if self.mode == "learnable":
@@ -142,8 +161,25 @@ class DraftUnifiedModel(nn.Module):
         winrate = self.wr_head(shared)
 
         champ_logits = torch.where(phase.unsqueeze(1) == 1, pick_logits, ban_logits)
+        champ_logits = self.__apply_mask(champ_logits, champ_mask)
+
+        role_mask = torch.where(
+            side == 1,
+            b_role_mask,
+            r_role_mask,
+        )
+
+        role_logits = self.__apply_mask(role_logits, role_mask)
 
         return champ_logits, role_logits, winrate
+
+    def __apply_mask(self, logits: torch.Tensor, mask: torch.Tensor):
+
+        unavailable = mask == 0
+
+        logits = logits.masked_fill(unavailable, float("-inf"))
+
+        return logits
 
 
 class DraftBrain:
@@ -224,14 +260,27 @@ class DraftBrain:
 
             for batch in tqdm(self.train_loader):
 
-                (X, bp, rp, bb, rb, side, phase, y_pick, y_ban, y_role, y_wr) = [
-                    b.to(self.device, non_blocking=True) for b in batch
-                ]
+                (
+                    X,
+                    bp,
+                    rp,
+                    bb,
+                    rb,
+                    champ_mask,
+                    b_role_mask,
+                    r_role_mask,
+                    side,
+                    phase,
+                    y_pick,
+                    y_ban,
+                    y_role,
+                    y_wr,
+                ) = [b.to(self.device, non_blocking=True) for b in batch]
 
                 self.opt.zero_grad()
 
                 champ_logits, role_logits, wr_pred = self.model(
-                    X, bp, rp, bb, rb, side, phase
+                    X, bp, rp, bb, rb, champ_mask, b_role_mask, r_role_mask, side, phase
                 )
 
                 y_champ = torch.where(phase == 1, y_pick, y_ban)
