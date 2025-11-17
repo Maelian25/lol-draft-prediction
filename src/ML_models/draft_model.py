@@ -257,6 +257,9 @@ class DraftBrain:
         for epoch in range(num_epochs):
             self.model.train()
             total_loss = 0.0
+            total_loss_c = 0.0
+            total_loss_r = 0.0
+            total_loss_w = 0.0
 
             for batch in tqdm(self.train_loader):
 
@@ -304,6 +307,13 @@ class DraftBrain:
                 loss.backward()
                 self.opt.step()
 
+                total_loss_c += loss_c
+                total_loss_r += loss_r
+                total_loss_w += loss_w
                 total_loss += loss.item()
 
-            print(f"Epoch {epoch+1}: loss={total_loss/len(self.train_loader):.4f}")
+            print(f"Losses for Epoch {epoch+1}:")
+            print(f"champ_loss={total_loss_c/len(self.train_loader):.4f}")
+            print(f"role_loss={total_loss_r/len(self.train_loader):.4f}")
+            print(f"wr_loss={total_loss_w/len(self.train_loader):.4f}")
+            print(f"total_loss={total_loss/len(self.train_loader):.4f}")
