@@ -169,9 +169,9 @@ if __name__ == "__main__":
             num_champions=171,
             num_roles=5,
             num_epochs=15,
-            batch_size=128,
-            hidden_dim=768,
-            embed_size=64,
+            batch_size=512,
+            hidden_dim=1024,
+            embed_size=96,
             mode="learnable",
         )
 

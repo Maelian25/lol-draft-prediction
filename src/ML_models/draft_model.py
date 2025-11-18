@@ -1,3 +1,4 @@
+import math
 from typing import Any
 from sklearn.model_selection import train_test_split
 import torch
@@ -100,33 +101,105 @@ class DraftUnifiedModel(nn.Module):
 
         self.logger = get_logger(self.__class__.__name__, "draft_training.log")
         self.mode = mode
+        team_size = num_roles
 
         if mode == "learnable":
             self.champ_embedding = nn.Embedding(
-                num_champions + 1, embed_size, padding_idx=num_champions
+                num_champions + 1,
+                embed_size,
+                padding_idx=num_champions,
             )
-            input_dim = 20 * embed_size + 1
+            # Embed normalization
+            self.embed_norm = nn.LayerNorm(embed_size)
+            # Dropout on every embed values
+            self.embed_dropout = nn.Dropout(0.1)
+            # Global normalization for team
+            self.team_norm = nn.LayerNorm(team_size * embed_size)
+            self.team_dropout = nn.Dropout(dropout)
+
+            # 20 picks/bans + side
+            input_dim = 4 * team_size * embed_size + 1
 
         self.logger.info(f"Input dim for {mode}: {input_dim}")
 
         self.shared = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
-            nn.ReLU(),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim, hidden_dim // 2),
             nn.LayerNorm(hidden_dim // 2),
-            nn.ReLU(),
+            nn.GELU(),
         )
 
-        self.pick_head = nn.Linear(hidden_dim // 2, num_champions + 1)
-        self.ban_head = nn.Linear(hidden_dim // 2, num_champions + 1)
-        self.role_head = nn.Linear(hidden_dim // 2, num_roles)
-        self.wr_head = nn.Linear(hidden_dim // 2, 1)
+        self.pick_head = nn.Sequential(
+            nn.Linear(hidden_dim // 2, hidden_dim // 2),
+            nn.LayerNorm(hidden_dim // 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, hidden_dim // 4),
+            nn.LayerNorm(hidden_dim // 4),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 4, num_champions + 1),
+        )
+
+        self.ban_head = nn.Sequential(
+            nn.Linear(hidden_dim // 2, hidden_dim // 2),
+            nn.LayerNorm(hidden_dim // 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, hidden_dim // 4),
+            nn.LayerNorm(hidden_dim // 4),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 4, num_champions + 1),
+        )
+        self.role_head = nn.Sequential(
+            nn.Linear(hidden_dim // 2, hidden_dim // 4),
+            nn.LayerNorm(hidden_dim // 4),
+            nn.GELU(),
+            nn.Dropout(dropout * 0.5),
+            nn.Linear(hidden_dim // 4, num_roles),
+        )
+
+        self.wr_head = nn.Sequential(
+            nn.Linear(hidden_dim // 2, hidden_dim // 4),
+            nn.LayerNorm(hidden_dim // 4),
+            nn.GELU(),
+            nn.Dropout(dropout * 0.5),
+            nn.Linear(hidden_dim // 4, 1),
+        )
+
+        # Initialize weights sensibly
+        self._init_weights()
 
     def encode_team(self, champ_ids):
+        # Embeddings (B, 5, E)
         emb = self.champ_embedding(champ_ids)
-        return emb.view(emb.shape[0], -1)
+        emb = self.embed_norm(emb)
+        emb = self.embed_dropout(emb)
+        # flatten (B, 5E)
+        emb = emb.reshape(emb.shape[0], -1)
+        emb = self.team_norm(emb)
+        emb = self.team_dropout(emb)
+        return emb
+
+    def _init_weights(self):
+        # Kaiming for linear layers, normal for embeddings
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_uniform_(m.weight, a=math.sqrt(5))
+                if m.bias is not None:
+                    fan_in, _ = nn.init._calculate_fan_in_and_fan_out(m.weight)
+                    bound = 1 / math.sqrt(fan_in)
+                    nn.init.uniform_(m.bias, -bound, bound)
+                elif isinstance(m, nn.Embedding):
+                    nn.init.normal_(m.weight, mean=0.0, std=0.01)
 
     def forward(
         self,
@@ -272,7 +345,7 @@ class DraftBrain:
         self.logger.info(f"Warmup steps: {scaled_warmup_steps}")
 
         self.opt = torch.optim.AdamW(
-            self.model.parameters(), lr=scaled_lr, weight_decay=1e-2
+            self.model.parameters(), lr=scaled_lr, weight_decay=3e-2
         )
 
         warmup_scheduler = LinearLR(
