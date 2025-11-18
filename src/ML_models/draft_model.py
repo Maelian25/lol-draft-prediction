@@ -3,6 +3,7 @@ from sklearn.model_selection import train_test_split
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
+from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 from tqdm import tqdm
 
 from src.utils.constants import DATA_REPRESENTATION_FOLDER, DRAFT_STATES_TORCH
@@ -106,7 +107,7 @@ class DraftUnifiedModel(nn.Module):
             )
             input_dim = 20 * embed_size + 1
 
-        self.logger.info(f"Input dim for {mode} : {input_dim}")
+        self.logger.info(f"Input dim for {mode}: {input_dim}")
 
         self.shared = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -189,10 +190,10 @@ class DraftBrain:
         input_dim,
         num_champions,
         num_roles,
+        num_epochs=10,
         batch_size=1024,
         hidden_dim=512,
         embed_size=64,
-        lr=1e-3,
         dropout=0.3,
         mode="static",
         device="cuda" if torch.cuda.is_available() else "cpu",
@@ -202,13 +203,14 @@ class DraftBrain:
 
         self.device = device
         self.batch_size = batch_size
+        self.num_epochs = num_epochs
 
         self.logger.info(f"PyTorch version: {torch.__version__}")
-        self.logger.info(f"CUDA available:  {torch.cuda.is_available()}")
+        self.logger.info(f"CUDA available: {torch.cuda.is_available()}")
         gpu_name = (
             torch.cuda.get_device_name(0) if torch.cuda.is_available() else "No GPU"
         )
-        self.logger.info(f"GPU name:{gpu_name}")
+        self.logger.info(f"GPU name: {gpu_name}")
 
         self.model = DraftUnifiedModel(
             num_champions=num_champions,
@@ -221,7 +223,7 @@ class DraftBrain:
         ).to(device)
 
         self.__build_dataset()
-        self.__training_fns(lr)
+        self.__training_fns()
 
         self.logger.info(f"Parameters used : Batch size = {batch_size} | Mode = {mode}")
 
@@ -243,21 +245,69 @@ class DraftBrain:
             persistent_workers=True,
             pin_memory=True,
         )
-        self.val_loader = DataLoader(val_subset, batch_size=self.batch_size)
+        self.val_loader = DataLoader(
+            val_subset,
+            batch_size=self.batch_size,
+            shuffle=True,
+        )
 
-    def __training_fns(self, lr):
+    def __training_fns(self):
 
-        self.opt = torch.optim.AdamW(self.model.parameters(), lr=lr)
+        base_batch = 128
+        base_lr = 3e-4
+        base_warmup_steps = 800
+        warmup_steps_ceiling = 2500
+        total_steps = self.num_epochs * len(self.train_loader)
+
+        scaled_lr = base_lr * (self.batch_size / base_batch)
+        scaled_warmup_steps = min(
+            warmup_steps_ceiling,
+            max(
+                base_warmup_steps,
+                int(base_warmup_steps * (self.batch_size / base_batch)),
+            ),
+        )
+
+        self.logger.info(f"Scaled learning rate: {scaled_lr}")
+        self.logger.info(f"Warmup steps: {scaled_warmup_steps}")
+
+        self.opt = torch.optim.AdamW(
+            self.model.parameters(), lr=scaled_lr, weight_decay=1e-2
+        )
+
+        warmup_scheduler = LinearLR(
+            self.opt,
+            start_factor=0.01,
+            end_factor=1.0,
+            total_iters=scaled_warmup_steps,
+        )
+
+        cosine_scheduler = CosineAnnealingLR(
+            self.opt,
+            T_max=(total_steps - scaled_warmup_steps),
+            eta_min=0.0,
+        )
+
+        self.scheduler = SequentialLR(
+            self.opt,
+            [
+                warmup_scheduler,
+                cosine_scheduler,
+            ],
+            milestones=[scaled_warmup_steps],
+        )
+
+        self.scaler = torch.GradScaler(self.device)
 
         self.loss_champ = nn.CrossEntropyLoss()
         self.loss_role = nn.CrossEntropyLoss()
         self.loss_wr = nn.BCEWithLogitsLoss()
 
-    def train(self, num_epochs=10):
+    def train(self):
 
-        self.logger.info("Started training")
+        for epoch in range(self.num_epochs):
 
-        for epoch in range(num_epochs):
+            self.logger.info(f"Started training for Epoch {epoch + 1}")
             self.model.train()
             total_loss = 0.0
             total_loss_c = 0.0
@@ -286,35 +336,50 @@ class DraftBrain:
                     y_wr,
                 ) = [b.to(self.device, non_blocking=True) for b in batch]
 
-                self.opt.zero_grad()
+                self.opt.zero_grad(set_to_none=True)
 
-                champ_logits, role_logits, wr_pred = self.model(
-                    X, bp, rp, bb, rb, champ_mask, b_role_mask, r_role_mask, side, phase
-                )
+                with torch.autocast(self.device):
 
-                # Champ loss
-                y_champ = torch.where(phase == 1, y_pick, y_ban)
-                loss_c = self.loss_champ(champ_logits, y_champ)
-                total_loss_c += loss_c.item()
+                    champ_logits, role_logits, wr_pred = self.model(
+                        X,
+                        bp,
+                        rp,
+                        bb,
+                        rb,
+                        champ_mask,
+                        b_role_mask,
+                        r_role_mask,
+                        side,
+                        phase,
+                    )
 
-                mask = phase == 1
+                    # Champ loss
+                    y_champ = torch.where(phase == 1, y_pick, y_ban)
+                    loss_c = self.loss_champ(champ_logits, y_champ)
+                    total_loss_c += loss_c.item()
 
-                # role loss and winrate loss
-                if mask.any():
-                    loss_r = self.loss_role(role_logits[mask], y_role[mask])
-                    total_loss_r += loss_r.item()
-                    count_role_batches += 1
+                    mask = phase == 1
 
-                    loss_w = self.loss_wr(wr_pred[mask].squeeze(-1), y_wr[mask])
-                    total_loss_w += loss_w.item()
-                    count_wr_batches += 1
-                else:
-                    loss_r = 0.0
-                    loss_w = 0.0
+                    # role loss and winrate loss
+                    if mask.any():
+                        loss_r = self.loss_role(role_logits[mask], y_role[mask])
+                        total_loss_r += loss_r.item()
+                        count_role_batches += 1
 
-                loss = loss_c + 0.5 * loss_r + 0.2 * loss_w
-                loss.backward()
-                self.opt.step()
+                        loss_w = self.loss_wr(wr_pred[mask].squeeze(-1), y_wr[mask])
+                        total_loss_w += loss_w.item()
+                        count_wr_batches += 1
+                    else:
+                        loss_r = 0.0
+                        loss_w = 0.0
+
+                    loss = loss_c + 0.5 * loss_r + 0.2 * loss_w
+
+                self.scaler.scale(loss).backward()
+                self.scaler.step(self.opt)
+                self.scaler.update()
+
+                self.scheduler.step()
 
                 total_loss += loss.item()
 
@@ -333,9 +398,10 @@ class DraftBrain:
 
     def evaluate(self, epoch):
 
+        self.logger.info(f"Started validation for Epoch {epoch+1}")
         self.model.eval()
 
-        with torch.no_grad():
+        with torch.no_grad(), torch.autocast(self.device):
 
             total_loss = 0.0
             total_loss_c = 0.0

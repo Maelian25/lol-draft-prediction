@@ -168,10 +168,10 @@ if __name__ == "__main__":
             input_dim=804,
             num_champions=171,
             num_roles=5,
+            num_epochs=15,
             batch_size=128,
-            hidden_dim=1024,
-            embed_size=96,
-            lr=1e-3,
+            hidden_dim=768,
+            embed_size=64,
             mode="learnable",
         )
 
