@@ -168,7 +168,9 @@ if __name__ == "__main__":
             input_dim=804,
             num_champions=171,
             num_roles=5,
-            batch_size=64,
+            batch_size=128,
+            hidden_dim=1024,
+            embed_size=96,
             mode="learnable",
         )
 

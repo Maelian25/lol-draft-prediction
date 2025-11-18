@@ -89,11 +89,11 @@ class DraftUnifiedModel(nn.Module):
         self,
         num_champions,
         num_roles,
-        input_dim=0,
-        hidden_dim=512,
-        dropout=0.3,
-        mode="static",
-        embed_size=64,
+        embed_size,
+        mode,
+        input_dim,
+        hidden_dim,
+        dropout,
     ) -> None:
         super().__init__()
 
@@ -191,6 +191,7 @@ class DraftBrain:
         num_roles,
         batch_size=1024,
         hidden_dim=512,
+        embed_size=64,
         dropout=0.3,
         mode="static",
         device="cuda" if torch.cuda.is_available() else "cpu",
@@ -215,6 +216,7 @@ class DraftBrain:
             hidden_dim=hidden_dim,
             dropout=dropout,
             mode=mode,
+            embed_size=embed_size,
         ).to(device)
 
         self.__build_dataset()
