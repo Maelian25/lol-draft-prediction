@@ -171,6 +171,7 @@ if __name__ == "__main__":
             batch_size=128,
             hidden_dim=1024,
             embed_size=96,
+            lr=1e-3,
             mode="learnable",
         )
 

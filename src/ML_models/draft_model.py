@@ -192,6 +192,7 @@ class DraftBrain:
         batch_size=1024,
         hidden_dim=512,
         embed_size=64,
+        lr=1e-3,
         dropout=0.3,
         mode="static",
         device="cuda" if torch.cuda.is_available() else "cpu",
@@ -220,7 +221,7 @@ class DraftBrain:
         ).to(device)
 
         self.__build_dataset()
-        self.__training_fns()
+        self.__training_fns(lr)
 
         self.logger.info(f"Parameters used : Batch size = {batch_size} | Mode = {mode}")
 
@@ -244,9 +245,9 @@ class DraftBrain:
         )
         self.val_loader = DataLoader(val_subset, batch_size=self.batch_size)
 
-    def __training_fns(self):
+    def __training_fns(self, lr):
 
-        self.opt = torch.optim.AdamW(self.model.parameters(), lr=1e-3)
+        self.opt = torch.optim.AdamW(self.model.parameters(), lr=lr)
 
         self.loss_champ = nn.CrossEntropyLoss()
         self.loss_role = nn.CrossEntropyLoss()
