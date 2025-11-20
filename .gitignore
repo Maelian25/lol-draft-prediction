@@ -61,3 +61,6 @@ env.bak/
 venv.bak/
 .venv
 env_bot_draft
+
+# Training run logs
+/runs
