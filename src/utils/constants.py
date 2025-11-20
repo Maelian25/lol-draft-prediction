@@ -2,7 +2,7 @@
 ROLE_MAP = {"TOP": 1, "JUNGLE": 2, "MIDDLE": 3, "BOTTOM": 4, "SUPPORT": 5}
 SAVE_AFTER_ITERATION = 1000
 REGIONS = dict({"EUROPE": "EU", "KOREA": "KR", "AMERICA": "US"})
-ELOS = dict({"challenger": 125, "grandmaster": 250, "master": 500})
+ELOS = dict({"challenger": 300, "grandmaster": 700, "master": 2000})
 
 # FOLDERS
 DATA_REPRESENTATION_FOLDER = "./data/representation/"

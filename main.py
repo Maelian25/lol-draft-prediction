@@ -45,7 +45,7 @@ def get_regional_data_from_api_threaded(region, short_name):
             dataset = Dataset(
                 region=region,
                 queue="RANKED_SOLO_5x5",
-                game_count=50,
+                game_count=100,
                 player_count=player_count,
                 elo=elo,
                 save_after_iteration=SAVE_AFTER_ITERATION,
