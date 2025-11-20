@@ -35,6 +35,7 @@ def preprocess_and_save(df: Any):
     champ_availability = expand_mask(champ_availability)
 
     # simple scalars
+    step = torch.tensor(df["step"].values, dtype=torch.long)
     blue_syn = torch.tensor(
         df["blue_synergy_score"].values, dtype=torch.float32
     ).unsqueeze(1)
@@ -69,6 +70,7 @@ def preprocess_and_save(df: Any):
             "blue_roles_available": blue_roles_available,
             "red_roles_available": red_roles_available,
             # scalar features
+            "step": step,
             "blue_syn": blue_syn,
             "red_syn": red_syn,
             "counter": counter,
