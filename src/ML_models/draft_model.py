@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 from tqdm import tqdm
 
@@ -37,6 +38,7 @@ class DraftDataset(Dataset):
         self.blue_roles_mask = data["blue_roles_available"]
         self.red_roles_mask = data["red_roles_available"]
 
+        self.step = data["step"]
         self.blue_syn = data["blue_syn"]
         self.red_syn = data["red_syn"]
         self.counter = data["counter"]
@@ -48,27 +50,27 @@ class DraftDataset(Dataset):
         self.t_role = data["t_role"]
         self.t_wr = data["t_wr"]
 
+        self.X_static = torch.cat(
+            [
+                self.blue_picks_emb,
+                self.red_picks_emb,
+                self.blue_bans_emb,
+                self.red_bans_emb,
+                self.blue_syn,
+                self.red_syn,
+                self.counter,
+                self.side,
+            ],
+            dim=1,
+        ).contiguous()
+
     def __len__(self):
         return len(self.phase)
 
     def __getitem__(self, idx):
 
-        X_static = torch.cat(
-            [
-                self.blue_picks_emb[idx],
-                self.red_picks_emb[idx],
-                self.blue_bans_emb[idx],
-                self.red_bans_emb[idx],
-                self.blue_syn[idx],
-                self.red_syn[idx],
-                self.counter[idx],
-                self.side[idx],
-            ],
-            dim=0,
-        ).contiguous()
-
         return (
-            X_static,
+            self.X_static[idx],
             self.blue_picks[idx],
             self.red_picks[idx],
             self.blue_bans[idx],
@@ -76,6 +78,7 @@ class DraftDataset(Dataset):
             self.champ_mask[idx],
             self.blue_roles_mask[idx],
             self.red_roles_mask[idx],
+            self.step[idx],
             self.side[idx],
             self.phase[idx],
             self.t_pick[idx],
@@ -96,6 +99,8 @@ class DraftUnifiedModel(nn.Module):
         input_dim,
         hidden_dim,
         dropout,
+        step_embed_size=16,
+        max_steps=25,
     ) -> None:
         super().__init__()
 
@@ -117,8 +122,10 @@ class DraftUnifiedModel(nn.Module):
             self.team_norm = nn.LayerNorm(team_size * embed_size)
             self.team_dropout = nn.Dropout(dropout)
 
+            self.step_embedding = nn.Embedding(max_steps, step_embed_size)
+
             # 20 picks/bans + side
-            input_dim = 4 * team_size * embed_size + 1
+            input_dim = 4 * team_size * embed_size + 1 + step_embed_size
 
         self.logger.info(f"Input dim for {mode}: {input_dim}")
 
@@ -211,6 +218,7 @@ class DraftUnifiedModel(nn.Module):
         champ_mask,
         b_role_mask,
         r_role_mask,
+        step,
         side,
         phase,
     ):
@@ -220,11 +228,20 @@ class DraftUnifiedModel(nn.Module):
             red_picks_emb = self.encode_team(red_picks)
             blue_bans_emb = self.encode_team(blue_bans)
             red_bans_emb = self.encode_team(red_bans)
+            step_emb = self.step_embedding(step.long())
 
             X = torch.cat(
-                [blue_picks_emb, red_picks_emb, blue_bans_emb, red_bans_emb, side],
+                [
+                    blue_picks_emb,
+                    red_picks_emb,
+                    blue_bans_emb,
+                    red_bans_emb,
+                    side,
+                    step_emb,
+                ],
                 dim=1,
             )
+
         else:
             X = X_static
 
@@ -270,9 +287,11 @@ class DraftBrain:
         dropout=0.3,
         mode="static",
         device="cuda" if torch.cuda.is_available() else "cpu",
+        experiment_name="draft_v1",
     ) -> None:
 
         self.logger = get_logger(self.__class__.__name__, "draft_training.log")
+        self.writer = SummaryWriter(log_dir=f"runs/{experiment_name}")
 
         self.device = device
         self.batch_size = batch_size
@@ -376,21 +395,55 @@ class DraftBrain:
         self.loss_role = nn.CrossEntropyLoss()
         self.loss_wr = nn.BCEWithLogitsLoss()
 
+    def calculate_metrics(
+        self, logits: torch.Tensor, targets: torch.Tensor, k_list=[1, 5]
+    ):
+        """
+        Provide best metrics for my model
+        """
+
+        with torch.no_grad():
+
+            max_k = max(k_list)
+
+            _, pred = logits.topk(max_k, 1, True, True)
+            pred = pred.t()
+
+            correct = pred.eq(targets.view(1, -1).expand_as(pred))
+
+            res = {}
+            for k in k_list:
+                correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
+                res[k] = correct_k.item()
+
+            return res
+
     def train(self):
 
+        self.model.train()
+
         for epoch in range(self.num_epochs):
+            self.logger.info(
+                f"Started training for Epoch {epoch + 1}/{self.num_epochs}"
+            )
 
-            self.logger.info(f"Started training for Epoch {epoch + 1}")
-            self.model.train()
-            total_loss = 0.0
-            total_loss_c = 0.0
-            total_loss_r = 0.0
-            total_loss_w = 0.0
+            epoch_metrics = {
+                "loss": 0.0,
+                "loss_c": 0.0,
+                "loss_r": 0.0,
+                "loss_w": 0.0,
+                "acc_c_1": 0.0,  # Champion Accuracy
+                "acc_c_5": 0.0,  # Champion Accuracy
+                "acc_r": 0.0,  # Role Accuracy
+                "wr_mae": 0.0,  # Winrate Mean Absolute Error
+                "count_c": 0,
+                "count_r": 0,
+                "count_w": 0,
+            }
 
-            count_role_batches = 0
-            count_wr_batches = 0
+            pbar = tqdm(self.train_loader, desc=f"Train Ep {epoch+1}")
 
-            for batch in tqdm(self.train_loader):
+            for batch in pbar:
 
                 (
                     X,
@@ -401,6 +454,7 @@ class DraftBrain:
                     champ_mask,
                     b_role_mask,
                     r_role_mask,
+                    step_idx,
                     side,
                     phase,
                     y_pick,
@@ -409,11 +463,11 @@ class DraftBrain:
                     y_wr,
                 ) = [b.to(self.device, non_blocking=True) for b in batch]
 
-                self.opt.zero_grad(set_to_none=True)
+                self.opt.zero_grad()
 
                 with torch.autocast(self.device):
 
-                    champ_logits, role_logits, wr_pred = self.model(
+                    champ_logits, role_logits, wr_logits = self.model(
                         X,
                         bp,
                         rp,
@@ -422,6 +476,7 @@ class DraftBrain:
                         champ_mask,
                         b_role_mask,
                         r_role_mask,
+                        step_idx,
                         side,
                         phase,
                     )
@@ -429,62 +484,97 @@ class DraftBrain:
                     # Champ loss
                     y_champ = torch.where(phase == 1, y_pick, y_ban)
                     loss_c = self.loss_champ(champ_logits, y_champ)
-                    total_loss_c += loss_c.item()
 
+                    # Role loss and winrate loss
                     mask = phase == 1
 
-                    # role loss and winrate loss
+                    loss_r = torch.tensor(0.0, device=self.device)
+                    loss_w = torch.tensor(0.0, device=self.device)
+
                     if mask.any():
                         loss_r = self.loss_role(role_logits[mask], y_role[mask])
-                        total_loss_r += loss_r.item()
-                        count_role_batches += 1
+                        loss_w = self.loss_wr(wr_logits[mask].squeeze(-1), y_wr[mask])
 
-                        loss_w = self.loss_wr(wr_pred[mask].squeeze(-1), y_wr[mask])
-                        total_loss_w += loss_w.item()
-                        count_wr_batches += 1
-                    else:
-                        loss_r = 0.0
-                        loss_w = 0.0
-
-                    loss = loss_c + 0.5 * loss_r + 0.2 * loss_w
+                    loss = loss_c + 0.5 * loss_r + 0.5 * loss_w
 
                 self.scaler.scale(loss).backward()
                 self.scaler.step(self.opt)
                 self.scaler.update()
-
                 self.scheduler.step()
 
-                total_loss += loss.item()
+                batch_size = X.size(0)
 
-            avg_total = total_loss / len(self.train_loader)
-            avg_c = total_loss_c / len(self.train_loader)
-            avg_r = total_loss_r / max(1, count_role_batches)
-            avg_w = total_loss_w / max(1, count_wr_batches)
+                # Champion Accuracy
+                acc_res = self.calculate_metrics(champ_logits, y_champ, k_list=[1, 5])
+                epoch_metrics["acc_c_1"] += acc_res[1]
+                epoch_metrics["acc_c_5"] += acc_res[5]
+                epoch_metrics["count_c"] += batch_size
 
-            self.logger.info(f"Training losses for Epoch {epoch + 1}:")
-            self.logger.info(f"champ_loss={avg_c:.4f}")
-            self.logger.info(f"role_loss={avg_r:.4f}")
-            self.logger.info(f"wr_loss={avg_w:.4f}")
-            self.logger.info(f"total_loss={avg_total:.4f}")
+                # Role Accuracy & Winrate Diff
+                if mask.any():
+                    n_picks = mask.sum().item()
 
-            self.evaluate(epoch=epoch)
+                    # Role
+                    acc_r_res = self.calculate_metrics(
+                        role_logits[mask], y_role[mask], k_list=[1]
+                    )
+                    epoch_metrics["acc_r"] += acc_r_res[1]
+                    epoch_metrics["count_r"] += n_picks
+
+                    # Winrate: logit conversion
+                    probs_wr = torch.sigmoid(wr_logits[mask].squeeze(-1))
+                    # MAE: (|pred - real|)
+                    mae = torch.abs(probs_wr - y_wr[mask]).sum().item()
+                    epoch_metrics["wr_mae"] += mae
+                    epoch_metrics["count_w"] += n_picks
+
+                # Accumulate losses
+                epoch_metrics["loss"] += loss.item() * batch_size
+                epoch_metrics["loss_c"] += loss_c.item() * batch_size
+                epoch_metrics["loss_r"] += (
+                    loss_r.item() * batch_size if mask.any() else 0
+                )
+                epoch_metrics["loss_w"] += (
+                    loss_w.item() * batch_size if mask.any() else 0
+                )
+
+            avg_metrics = {
+                "loss": epoch_metrics["loss"] / epoch_metrics["count_c"],
+                "acc_champ_top1": epoch_metrics["acc_c_1"] / epoch_metrics["count_c"],
+                "acc_champ_top5": epoch_metrics["acc_c_5"] / epoch_metrics["count_c"],
+                "acc_role": epoch_metrics["acc_r"] / max(1, epoch_metrics["count_r"]),
+                "wr_mae": epoch_metrics["wr_mae"] / max(1, epoch_metrics["count_w"]),
+            }
+
+            for k, v in avg_metrics.items():
+                self.writer.add_scalar(f"Train/{k}", v, epoch)
+
+            self.logger.info(
+                f"Train Loss: {avg_metrics['loss']:.4f} | "
+                f"Top1: {avg_metrics['acc_champ_top1']:.2%} | "
+                f"WR Error: {avg_metrics['wr_mae']:.2%}"
+            )
+
+            # Validation
+            self.evaluate(epoch)
 
     def evaluate(self, epoch):
 
         self.logger.info(f"Started validation for Epoch {epoch+1}")
         self.model.eval()
+        val_metrics = {
+            "loss": 0.0,
+            "acc_c_1": 0.0,
+            "acc_c_5": 0.0,
+            "acc_r": 0.0,
+            "wr_mae": 0.0,
+            "count_c": 0,
+            "count_r": 0,
+            "count_w": 0,
+        }
 
         with torch.no_grad(), torch.autocast(self.device):
-
-            total_loss = 0.0
-            total_loss_c = 0.0
-            total_loss_r = 0.0
-            total_loss_w = 0.0
-
-            count_role_batches = 0
-            count_wr_batches = 0
-
-            for batch in tqdm(self.val_loader):
+            for batch in tqdm(self.val_loader, desc=f"Val Ep {epoch+1}"):
 
                 (
                     X,
@@ -495,6 +585,7 @@ class DraftBrain:
                     champ_mask,
                     b_role_mask,
                     r_role_mask,
+                    step_idx,
                     side,
                     phase,
                     y_pick,
@@ -503,42 +594,147 @@ class DraftBrain:
                     y_wr,
                 ) = [b.to(self.device, non_blocking=True) for b in batch]
 
-                # forward
-                champ_logits, role_logits, wr_pred = self.model(
-                    X, bp, rp, bb, rb, champ_mask, b_role_mask, r_role_mask, side, phase
+                champ_logits, role_logits, wr_logits = self.model(
+                    X,
+                    bp,
+                    rp,
+                    bb,
+                    rb,
+                    champ_mask,
+                    b_role_mask,
+                    r_role_mask,
+                    step_idx,
+                    side,
+                    phase,
                 )
 
-                # champion loss
+                # Champ loss
                 y_champ = torch.where(phase == 1, y_pick, y_ban)
                 loss_c = self.loss_champ(champ_logits, y_champ)
-                total_loss_c += loss_c.item()
 
                 # phase mask
                 mask = phase == 1
 
-                # role loss and winrate loss
+                loss_r = 0.0
+                loss_w = 0.0
+
+                # Role loss and winrate loss
                 if mask.any():
                     loss_r = self.loss_role(role_logits[mask], y_role[mask])
-                    total_loss_r += loss_r.item()
-                    count_role_batches += 1
+                    loss_w = self.loss_wr(wr_logits[mask].squeeze(-1), y_wr[mask])
 
-                    loss_w = self.loss_wr(wr_pred[mask].squeeze(-1), y_wr[mask])
-                    total_loss_w += loss_w.item()
-                    count_wr_batches += 1
-                else:
-                    loss_r = 0.0
-                    loss_w = 0.0
+                loss = loss_c.item() + 0.5 * loss_r + 0.5 * loss_w
 
-                loss = loss_c + 0.5 * loss_r + 0.2 * loss_w
-                total_loss += loss.item()
+                batch_size = X.size(0)
+                val_metrics["loss"] += loss * batch_size
+                val_metrics["count_c"] += batch_size
 
-            avg_total = total_loss / len(self.val_loader)
-            avg_c = total_loss_c / len(self.val_loader)
-            avg_r = total_loss_r / max(1, count_role_batches)
-            avg_w = total_loss_w / max(1, count_wr_batches)
+                # Champ Accuracy
+                acc_res = self.calculate_metrics(champ_logits, y_champ, k_list=[1, 5])
+                val_metrics["acc_c_1"] += acc_res[1]
+                val_metrics["acc_c_5"] += acc_res[5]
 
-            self.logger.info(f"Validation losses for Epoch {epoch + 1}:")
-            self.logger.info(f"champ_loss={avg_c:.4f}")
-            self.logger.info(f"role_loss={avg_r:.4f}")
-            self.logger.info(f"wr_loss={avg_w:.4f}")
-            self.logger.info(f"total_loss={avg_total:.4f}")
+                # Role Accuracy & Winrate Diff
+                if mask.any():
+                    n_picks = mask.sum().item()
+
+                    # Role
+                    acc_r_res = self.calculate_metrics(
+                        role_logits[mask], y_role[mask], k_list=[1]
+                    )
+                    val_metrics["acc_r"] += acc_r_res[1]
+                    val_metrics["count_r"] += n_picks
+
+                    # Winrate
+                    probs_wr = torch.sigmoid(wr_logits[mask].squeeze(-1))
+                    mae = torch.abs(probs_wr - y_wr[mask]).sum().item()
+                    val_metrics["wr_mae"] += mae
+                    val_metrics["count_w"] += n_picks
+
+            # Final averages
+            avg_val = {
+                "loss": val_metrics["loss"] / val_metrics["count_c"],
+                "acc_champ_top1": val_metrics["acc_c_1"] / val_metrics["count_c"],
+                "acc_champ_top5": val_metrics["acc_c_5"] / val_metrics["count_c"],
+                "acc_role": val_metrics["acc_r"] / max(1, val_metrics["count_r"]),
+                "wr_mae": val_metrics["wr_mae"] / max(1, val_metrics["count_w"]),
+            }
+
+            # LOGGING TENSORBOARD (Validation)
+            for k, v in avg_val.items():
+                self.writer.add_scalar(f"Val/{k}", v, epoch)
+
+            self.logger.info(f"VAL RESULTS Ep {epoch+1}:")
+            self.logger.info(f" > Loss: {avg_val['loss']:.4f}")
+            self.logger.info(
+                f" > Champ Acc (Top1/Top5): "
+                f"{avg_val['acc_champ_top1']:.2%} / {avg_val['acc_champ_top5']:.2%}"
+            )
+            self.logger.info(f" > Winrate Avg Error: {avg_val['wr_mae']:.2%}")
+
+    def sanity_check(self):
+        self.logger.info("Started sanity check (Overfitting 1 Batch)")
+
+        # Getting only one batch
+        batch = next(iter(self.train_loader))
+        (
+            X,
+            bp,
+            rp,
+            bb,
+            rb,
+            champ_mask,
+            b_role_mask,
+            r_role_mask,
+            side,
+            phase,
+            y_pick,
+            y_ban,
+            y_role,
+            y_wr,
+        ) = [b.to(self.device) for b in batch]
+
+        self.model.train()
+
+        # 5000 epochs on this batch
+        for i in range(5000):
+            self.opt.zero_grad()
+
+            with torch.autocast(self.device):
+                champ_logits, role_logits, wr_logits = self.model(
+                    X, bp, rp, bb, rb, champ_mask, b_role_mask, r_role_mask, side, phase
+                )
+
+                y_champ = torch.where(phase == 1, y_pick, y_ban)
+                loss_c = self.loss_champ(champ_logits, y_champ)
+
+                mask_pick = phase == 1
+                loss_r = torch.tensor(0.0, device=self.device)
+                loss_w = torch.tensor(0.0, device=self.device)
+
+                if mask_pick.any():
+                    loss_r = self.loss_role(role_logits[mask_pick], y_role[mask_pick])
+                    loss_w = self.loss_wr(
+                        wr_logits[mask_pick].squeeze(-1), y_wr[mask_pick]
+                    )
+
+                loss = loss_c + loss_r + loss_w
+
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.opt)
+            self.scaler.update()
+
+            if i % 100 == 0:
+                # Check accuracy
+                acc = (champ_logits.argmax(dim=1) == y_champ).float().mean()
+                probs_wr = torch.sigmoid(wr_logits[mask_pick].squeeze(-1))
+                wr_err = torch.abs(probs_wr - y_wr[mask_pick]).mean()
+
+                print(
+                    f"Epoch {i}: Loss={loss.item():.4f} | Acc={acc:.2%} "
+                    f"| WR Error={wr_err:.4f}"
+                )
+
+                if acc > 0.99:
+                    print("SUCCESS: Model has learned every detail of the dataset!")
+                    return
