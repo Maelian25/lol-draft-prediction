@@ -5,8 +5,9 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from src.ML_models.draft_model import DraftBrain
-from src.ML_models.preprocess import preprocess_and_save
+from src.ML_models.draft_MLP import DraftMLPModel
+from src.ML_training.trainer import TrainerClass
+from src.ML_training.utils import preprocess_and_save
 from src.analysis.dataset_analysis import DatasetAnalysis
 from src.data_scrapping.dataset import Dataset
 from src.utils.champions_helper import champName_to_champId
@@ -164,18 +165,11 @@ if __name__ == "__main__":
         # Process matches to be torch ready and load faster for training
         preprocess_and_save(matches_states)
 
-        draft_brain = DraftBrain(
-            input_dim=804,
-            num_champions=171,
-            num_roles=5,
-            num_epochs=15,
-            batch_size=512,
-            hidden_dim=1024,
-            embed_size=96,
-            mode="learnable",
-        )
+        mlp_model = DraftMLPModel(num_champions=171, num_roles=5, mode="learnable")
 
-        draft_brain.train()
+        trainer = TrainerClass(model=mlp_model)
+
+        trainer.train()
 
     except Exception as e:
         logger.critical(f"Fatal error: {e}", exc_info=True)
