@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from src.ML_models.draft_MLP import DraftMLPModel
 from src.ML_training.dataset import DraftDataset
-from src.ML_training.utils import calculate_metrics
+from src.ML_training.utils import MultiTaskLossWrapper, calculate_metrics
 from src.utils.logger_config import get_logger
 from src.utils.constants import DATA_REPRESENTATION_FOLDER, DRAFT_STATES_TORCH
 
@@ -27,8 +27,8 @@ class TrainerClass:
         data_folder=DATA_REPRESENTATION_FOLDER,
         data_file=DRAFT_STATES_TORCH,
         num_epochs=25,
-        batch_size=256,
-        base_lr=1e-3,
+        batch_size=64,
+        base_lr=1e-4,
         warmup_steps=[500, 2000],
         device="cuda" if torch.cuda.is_available() else "cpu",
         experiment_name="draft_v1",
@@ -112,7 +112,7 @@ class TrainerClass:
 
                 self.opt.zero_grad()
 
-                with torch.autocast(self.device):
+                with torch.autocast(self.device, dtype=torch.float32):
 
                     champ_logits, role_logits, wr_logits = self.model(
                         X,
@@ -142,7 +142,7 @@ class TrainerClass:
                         loss_r = self.loss_role(role_logits[mask], y_role[mask])
                         loss_w = self.loss_wr(wr_logits[mask].squeeze(-1), y_wr[mask])
 
-                    loss = loss_c + 0.5 * loss_r + 0.5 * loss_w
+                    loss = self.mtl_loss(loss_c, loss_r, loss_w)
 
                 self.scaler.scale(loss).backward()
                 self.scaler.step(self.opt)
@@ -196,11 +196,15 @@ class TrainerClass:
             for k, v in avg_metrics.items():
                 self.writer.add_scalar(f"Train/{k}", v, epoch)
 
+            self.logger.info(f"TRAIN RESULTS Ep {epoch+1}:")
+            self.logger.info(f" > Loss: {avg_metrics['loss']:.4f}")
             self.logger.info(
-                f"Train Loss: {avg_metrics['loss']:.4f} | "
-                f"Top1: {avg_metrics['acc_champ_top1']:.2%} | "
-                f"WR Error: {avg_metrics['wr_mae']:.2%}"
+                f" > Champ Acc (Top1/Top5): "
+                f"{avg_metrics['acc_champ_top1']:.2%} / "
+                f"{avg_metrics['acc_champ_top5']:.2%}"
             )
+            self.logger.info(f" > Role Acc : {avg_metrics['acc_role']:.2%}")
+            self.logger.info(f" > Winrate Avg Error: {avg_metrics['wr_mae']:.2%}")
 
             # Validation
             self.evaluate(epoch)
@@ -221,7 +225,7 @@ class TrainerClass:
             "count_w": 0,
         }
 
-        with torch.no_grad(), torch.autocast(self.device):
+        with torch.no_grad(), torch.autocast(self.device, dtype=torch.float32):
             for batch in tqdm(self.val_loader, desc=f"Val Ep {epoch+1}"):
 
                 (
@@ -263,18 +267,18 @@ class TrainerClass:
                 # phase mask
                 mask = phase == 1
 
-                loss_r = 0.0
-                loss_w = 0.0
+                loss_r = torch.tensor(0.0, device=self.device)
+                loss_w = torch.tensor(0.0, device=self.device)
 
                 # Role loss and winrate loss
                 if mask.any():
                     loss_r = self.loss_role(role_logits[mask], y_role[mask])
                     loss_w = self.loss_wr(wr_logits[mask].squeeze(-1), y_wr[mask])
 
-                loss = loss_c.item() + 0.5 * loss_r + 0.5 * loss_w
+                loss = self.mtl_loss(loss_c, loss_r, loss_w)
 
                 batch_size = X.size(0)
-                val_metrics["loss"] += loss * batch_size
+                val_metrics["loss"] += loss.item() * batch_size
                 val_metrics["count_c"] += batch_size
 
                 # Champ Accuracy
@@ -318,12 +322,13 @@ class TrainerClass:
                 f" > Champ Acc (Top1/Top5): "
                 f"{avg_val['acc_champ_top1']:.2%} / {avg_val['acc_champ_top5']:.2%}"
             )
+            self.logger.info(f" > Role Acc : {avg_val['acc_role']:.2%}")
             self.logger.info(f" > Winrate Avg Error: {avg_val['wr_mae']:.2%}")
 
     def sanity_check(self):
         self.logger.info("Started sanity check (Overfitting 1 Batch)")
 
-        # Getting only one batch
+        # Getting only one batch (batch size 64)
         batch = next(iter(self.train_loader))
         (
             X,
@@ -334,6 +339,7 @@ class TrainerClass:
             champ_mask,
             b_role_mask,
             r_role_mask,
+            step_idx,
             side,
             phase,
             y_pick,
@@ -344,13 +350,23 @@ class TrainerClass:
 
         self.model.train()
 
-        # 5000 epochs on this batch
-        for i in range(5000):
+        # 150 epochs on this batch
+        for i in range(150):
             self.opt.zero_grad()
 
-            with torch.autocast(self.device):
+            with torch.autocast(self.device, dtype=torch.float32):
                 champ_logits, role_logits, wr_logits = self.model(
-                    X, bp, rp, bb, rb, champ_mask, b_role_mask, r_role_mask, side, phase
+                    X,
+                    bp,
+                    rp,
+                    bb,
+                    rb,
+                    champ_mask,
+                    b_role_mask,
+                    r_role_mask,
+                    step_idx,
+                    side,
+                    phase,
                 )
 
                 y_champ = torch.where(phase == 1, y_pick, y_ban)
@@ -366,13 +382,13 @@ class TrainerClass:
                         wr_logits[mask_pick].squeeze(-1), y_wr[mask_pick]
                     )
 
-                loss = loss_c + loss_r + loss_w
+                loss = self.mtl_loss(loss_c, loss_r, loss_w)
 
             self.scaler.scale(loss).backward()
             self.scaler.step(self.opt)
             self.scaler.update()
 
-            if i % 100 == 0:
+            if i % 10 == 0:
                 # Check accuracy
                 acc = (champ_logits.argmax(dim=1) == y_champ).float().mean()
                 probs_wr = torch.sigmoid(wr_logits[mask_pick].squeeze(-1))
@@ -401,9 +417,10 @@ class TrainerClass:
             train_subset,
             batch_size=self.batch_size,
             shuffle=True,
-            num_workers=8,
+            num_workers=4,
             persistent_workers=True,
             pin_memory=True,
+            drop_last=True,
         )
         self.val_loader = DataLoader(
             val_subset,
@@ -425,8 +442,8 @@ class TrainerClass:
             ),
         )
 
-        self.logger.info(f"Learning rate: {self.base_lr}")
-        self.logger.info(f"Warmup steps: {clamped_warmup_steps}")
+        self.logger.info(f"Learning rate : {self.base_lr}")
+        self.logger.info(f"Warmup steps : {clamped_warmup_steps}")
 
         self.opt = torch.optim.AdamW(
             self.model.parameters(), lr=self.base_lr, weight_decay=5e-2
@@ -459,3 +476,5 @@ class TrainerClass:
         self.loss_champ = nn.CrossEntropyLoss()
         self.loss_role = nn.CrossEntropyLoss()
         self.loss_wr = nn.BCEWithLogitsLoss()
+
+        self.mtl_loss = MultiTaskLossWrapper(num_tasks=3).to(self.device)
