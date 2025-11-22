@@ -387,10 +387,14 @@ class TrainerClass:
             self.scaler.step(self.opt)
             self.scaler.update()
 
-            if i % 10 == 0:
+            if i % 100 == 0:
                 # Check accuracy
                 champ_acc = (champ_logits.argmax(dim=1) == y_champ).float().mean()
-                role_acc = (role_logits.argmax(dim=1) == y_role).float().mean()
+                role_acc = (
+                    (role_logits[mask_pick].argmax(dim=1) == y_role[mask_pick])
+                    .float()
+                    .mean()
+                )
                 probs_wr = torch.sigmoid(wr_logits[mask_pick].squeeze(-1))
                 wr_err = torch.abs(probs_wr - y_wr[mask_pick]).mean()
 
@@ -400,7 +404,7 @@ class TrainerClass:
                     f"| WR Error={wr_err:.4f}"
                 )
 
-                if champ_acc > 0.99:
+                if champ_acc > 0.99 and role_acc > 0.99 and wr_err < 0.01:
                     self.logger.info(
                         "SUCCESS: Model has learned every detail of the dataset!"
                     )
