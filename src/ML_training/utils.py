@@ -1,6 +1,7 @@
 from typing import Any
 import numpy as np
 import torch
+import torch.nn as nn
 
 from src.utils.constants import DATA_REPRESENTATION_FOLDER, DRAFT_STATES_TORCH
 from src.utils.logger_config import get_logger
@@ -116,3 +117,29 @@ def calculate_metrics(logits: torch.Tensor, targets: torch.Tensor, k_list=[1, 5]
             res[k] = correct_k.item()
 
         return res
+
+
+class MultiTaskLossWrapper(nn.Module):
+
+    def __init__(self, num_tasks=3):
+        super(MultiTaskLossWrapper, self).__init__()
+
+        self.log_vars = nn.Parameter(torch.zeros((num_tasks)))
+
+    def forward(self, loss_champ, loss_role, loss_win):
+        # Formulas from Kendall et al. (CVPR 2018)
+
+        # Champ pick or ban loss
+        precision1 = torch.exp(-self.log_vars[0])
+        loss1 = precision1 * loss_champ + self.log_vars[0]
+
+        # Role loss
+        precision2 = torch.exp(-self.log_vars[1])
+        loss2 = precision2 * loss_role + self.log_vars[1]
+
+        # Winrate loss
+        precision3 = torch.exp(-self.log_vars[2])
+        loss3 = precision3 * loss_win + self.log_vars[2]
+
+        # Somme finale
+        return loss1 + loss2 + loss3
