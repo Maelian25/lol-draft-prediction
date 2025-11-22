@@ -1,8 +1,44 @@
 import math
 import torch
 import torch.nn as nn
-from src.ML_models.utils import shared_mlp, three_layers_mlp, two_layers_mlp
+from src.ML_models.utils import head_mlp
 from src.utils.logger_config import get_logger
+
+
+class ResidualBlock(nn.Module):
+    """
+    Residual block to allow modle to be deep without losing too much info
+
+    Structure : Input -> [Linear -> BN -> GELU -> Dropout]
+                      -> [Linear -> BN] + Input
+                      -> Gelu
+    """
+
+    def __init__(self, hidden_dim, dropout=0.3) -> None:
+        super(ResidualBlock, self).__init__()
+
+        self.linear1 = nn.Linear(hidden_dim, hidden_dim)
+        self.bn1 = nn.BatchNorm1d(hidden_dim)
+        self.linear2 = nn.Linear(hidden_dim, hidden_dim)
+        self.bn2 = nn.BatchNorm1d(hidden_dim)
+
+        self.dropout = nn.Dropout(dropout)
+        self.activation = nn.GELU()
+
+    def forward(self, x):
+        residual = x
+        output = self.linear1(x)
+        output = self.bn1(output)
+        output = self.activation(output)
+        output = self.dropout(output)
+
+        output = self.linear2(output)
+        output = self.bn2(output)
+
+        output += residual
+        output = self.activation(output)
+
+        return output
 
 
 class DraftMLPModel(nn.Module):
@@ -17,10 +53,11 @@ class DraftMLPModel(nn.Module):
         num_champions,
         num_roles,
         mode,
-        hidden_dim=1024,
-        dropout=0.3,
+        hidden_dim=256,
+        dropout=0.4,
         input_dim=0,
-        embed_size=96,
+        num_res_blocks=1,
+        embed_size=32,
         step_embed_size=16,
         max_steps=20,
     ) -> None:
@@ -33,24 +70,31 @@ class DraftMLPModel(nn.Module):
         self.num_champions = num_champions
         self.embed_size = embed_size
         self.step_embed_size = step_embed_size
+        self.side_embed_size = step_embed_size
         self.max_steps = max_steps
         self.dropout = dropout
 
         if mode == "learnable":
             self.__init_embeddings()
 
-            # 20 picks/bans + side + step_embedding
-            input_dim = 4 * self.team_size * embed_size + 1 + step_embed_size
+            # 20 picks/bans + side_embedding + step_embedding
+            input_dim = (
+                4 * self.team_size * embed_size + step_embed_size + step_embed_size
+            )
 
         self.logger.info(f"Input dim for {mode}: {input_dim}")
 
-        self.shared = shared_mlp(input_dim, hidden_dim, dropout)
+        # Backbone (shared representation)
+        self.input_projection = nn.Linear(input_dim, hidden_dim)
+        self.blocks = nn.ModuleList(
+            [ResidualBlock(hidden_dim, dropout) for _ in range(num_res_blocks)]
+        )
 
-        self.pick_head = three_layers_mlp(hidden_dim, dropout, num_champions + 1)
-        self.ban_head = three_layers_mlp(hidden_dim, dropout, num_champions + 1)
+        self.pick_head = head_mlp("pick", hidden_dim, num_champions + 1)
+        self.ban_head = head_mlp("ban", hidden_dim, num_champions + 1)
 
-        self.role_head = two_layers_mlp(hidden_dim, dropout, num_roles)
-        self.wr_head = two_layers_mlp(hidden_dim, dropout, 1)
+        self.role_head = head_mlp("role", hidden_dim, num_roles)
+        self.wr_head = head_mlp("wr", hidden_dim, 1)
 
         # Initialize weights sensibly
         self.__init_weights()
@@ -71,19 +115,20 @@ class DraftMLPModel(nn.Module):
     ):
 
         if self.mode == "learnable":
-            blue_picks_emb = self.__encode_team(bp)
-            red_picks_emb = self.__encode_team(rp)
-            blue_bans_emb = self.__encode_team(bb)
-            red_bans_emb = self.__encode_team(rb)
+            bp_emb = self.champ_embedding(bp).flatten(1)
+            rp_emb = self.champ_embedding(rp).flatten(1)
+            bb_emb = self.champ_embedding(bb).flatten(1)
+            rb_emb = self.champ_embedding(rb).flatten(1)
             step_emb = self.step_embedding(step.long())
+            side_embed = self.side_embedding(side.squeeze(1))
 
             X = torch.cat(
                 [
-                    blue_picks_emb,
-                    red_picks_emb,
-                    blue_bans_emb,
-                    red_bans_emb,
-                    side,
+                    bp_emb,
+                    rp_emb,
+                    bb_emb,
+                    rb_emb,
+                    side_embed,
                     step_emb,
                 ],
                 dim=1,
@@ -92,11 +137,14 @@ class DraftMLPModel(nn.Module):
         else:
             X = X_static
 
-        shared = self.shared(X)
-        pick_logits = self.pick_head(shared)
-        ban_logits = self.ban_head(shared)
-        role_logits = self.role_head(shared)
-        winrate = self.wr_head(shared)
+        out = self.input_projection(X)
+        for block in self.blocks:
+            out = block(out)
+
+        pick_logits = self.pick_head(out)
+        ban_logits = self.ban_head(out)
+        role_logits = self.role_head(out)
+        winrate = self.wr_head(out)
 
         champ_logits = torch.where(phase.unsqueeze(1) == 1, pick_logits, ban_logits)
         champ_logits = self.__apply_mask(champ_logits, champ_mask)
@@ -110,17 +158,6 @@ class DraftMLPModel(nn.Module):
         role_logits = self.__apply_mask(role_logits, role_mask)
 
         return champ_logits, role_logits, winrate
-
-    def __encode_team(self, champ_ids):
-        # Embeddings (B, 5, E)
-        emb = self.champ_embedding(champ_ids)
-        emb = self.embed_norm(emb)
-        emb = self.embed_dropout(emb)
-        # flatten (B, 5E)
-        emb = emb.reshape(emb.shape[0], -1)
-        emb = self.team_norm(emb)
-        emb = self.team_dropout(emb)
-        return emb
 
     def __init_weights(self):
         # Kaiming for linear layers, normal for embeddings
@@ -140,20 +177,14 @@ class DraftMLPModel(nn.Module):
             self.embed_size,
             padding_idx=self.num_champions,
         )
-        # Embed normalization
-        self.embed_norm = nn.LayerNorm(self.embed_size)
-        # Dropout on every embed values
-        self.embed_dropout = nn.Dropout(0.1)
-        # Global normalization for team
-        self.team_norm = nn.LayerNorm(self.team_size * self.embed_size)
-        self.team_dropout = nn.Dropout(self.dropout)
 
         self.step_embedding = nn.Embedding(self.max_steps, self.step_embed_size)
+        self.side_embedding = nn.Embedding(2, self.side_embed_size)
 
     def __apply_mask(self, logits: torch.Tensor, mask: torch.Tensor):
 
         unavailable = mask == 0
 
-        logits = logits.masked_fill(unavailable, float("-inf"))
+        logits = logits.masked_fill(unavailable, -1.0e9)
 
         return logits
