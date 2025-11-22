@@ -350,8 +350,7 @@ class TrainerClass:
 
         self.model.train()
 
-        # 150 epochs on this batch
-        for i in range(150):
+        for i in range(self.num_epochs):
             self.opt.zero_grad()
 
             with torch.autocast(self.device, dtype=torch.float32):
@@ -390,17 +389,21 @@ class TrainerClass:
 
             if i % 10 == 0:
                 # Check accuracy
-                acc = (champ_logits.argmax(dim=1) == y_champ).float().mean()
+                champ_acc = (champ_logits.argmax(dim=1) == y_champ).float().mean()
+                role_acc = (role_logits.argmax(dim=1) == y_role).float().mean()
                 probs_wr = torch.sigmoid(wr_logits[mask_pick].squeeze(-1))
                 wr_err = torch.abs(probs_wr - y_wr[mask_pick]).mean()
 
                 print(
-                    f"Epoch {i}: Loss={loss.item():.4f} | Acc={acc:.2%} "
+                    f"Epoch {i}: Loss={loss.item():.4f} | Champ Acc={champ_acc:.2%} "
+                    f"| Role Acc={role_acc:.2%}"
                     f"| WR Error={wr_err:.4f}"
                 )
 
-                if acc > 0.99:
-                    print("SUCCESS: Model has learned every detail of the dataset!")
+                if champ_acc > 0.99:
+                    self.logger.info(
+                        "SUCCESS: Model has learned every detail of the dataset!"
+                    )
                     return
 
     def __build_dataset(self):
