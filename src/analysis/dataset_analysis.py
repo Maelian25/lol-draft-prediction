@@ -40,6 +40,11 @@ class DatasetAnalysis:
         self.synergy = SynergyAnalysis(data, patches)
         self.counter = CounterAnalysis(data, patches)
 
+        self.logger.info(f"Number of games before clean up {len(data)}")
+        self.logger.info(
+            f"Number of games after clean up {self.global_analysis.num_matches}"
+        )
+
     def get_champion_embeddings(self, rebuild=False) -> pd.DataFrame:
 
         if not rebuild:
