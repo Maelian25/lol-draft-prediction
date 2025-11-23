@@ -3,6 +3,7 @@ from typing import List, Optional
 import numpy as np
 import pandas as pd
 from sklearn.discriminant_analysis import StandardScaler
+from tqdm import tqdm
 
 from src.analysis.matrices.counter_matrix import CounterAnalysis
 from src.analysis.matrices.synergy_matrix import SynergyAnalysis
@@ -157,7 +158,11 @@ class DatasetAnalysis:
         t_compute_start = perf_counter()
         self.logger.info("Starting match states generation")
 
-        for match in self.champion_stats.dataset.itertuples():
+        for match in tqdm(
+            self.champion_stats.dataset.itertuples(),
+            desc="Match number",
+            total=self.global_analysis.num_matches,
+        ):
 
             match_id = getattr(match, "match_id")
             picks = getattr(match, "picks")
