@@ -1,3 +1,4 @@
+import os
 from sklearn.model_selection import train_test_split
 
 import torch
@@ -11,7 +12,10 @@ from src.ML_models.draft_MLP import DraftMLPModel
 from src.ML_training.dataset import DraftDataset
 from src.ML_training.utils import MultiTaskLossWrapper, calculate_metrics
 from src.utils.logger_config import get_logger
-from src.utils.constants import DATA_REPRESENTATION_FOLDER, DRAFT_STATES_TORCH
+from src.utils.constants import (
+    DATA_REPRESENTATION_FOLDER,
+    DRAFT_STATES_TORCH,
+)
 
 
 class TrainerClass:
@@ -33,6 +37,8 @@ class TrainerClass:
         warmup_steps=[500, 2000],
         device="cuda" if torch.cuda.is_available() else "cpu",
         experiment_name="draft_v1",
+        patience=5,
+        save_dir="./data",
     ) -> None:
 
         self.logger = get_logger(self.__class__.__name__, "draft_training.log")
@@ -47,6 +53,9 @@ class TrainerClass:
         self.base_lr = base_lr
         self.weight_decay = weight_decay
         self.warmup_steps = warmup_steps
+        self.patience = patience
+        self.save_dir = save_dir
+        os.makedirs(self.save_dir, exist_ok=True)
 
         self.model: DraftMLPModel = model.to(device)
 
@@ -61,10 +70,11 @@ class TrainerClass:
 
         self.__build_dataset()
         self.__training_fns()
+        self.__build_early_stopping()  # NOUVEAU
 
         self.logger.info(
             f"Parameters in use : Batch size = {batch_size} | Device = {device} | "
-            f"Num epochs = {num_epochs}"
+            f"Num epochs = {num_epochs} | Patience = {patience}"
         )
 
     def train(self):
@@ -83,7 +93,7 @@ class TrainerClass:
                 "loss_w": 0.0,
                 "acc_c_1": 0.0,  # Champion Accuracy
                 "acc_c_5": 0.0,  # Champion Accuracy
-                "acc_c_8": 0.0,  # Champion Accuracy
+                "acc_c_10": 0.0,  # Champion Accuracy
                 "acc_r": 0.0,  # Role Accuracy
                 "wr_mae": 0.0,  # Winrate Mean Absolute Error
                 "count_c": 0,
@@ -151,16 +161,16 @@ class TrainerClass:
                 self.scaler.step(self.opt)
                 self.scaler.update()
                 self.scheduler.step()
-                self.mtl_loss.log_vars.data[0].clamp_(max=-0.5)
-                self.mtl_loss.log_vars.data[2].clamp_(min=0.3)
+                self.mtl_loss.log_vars.data[0].clamp_(max=-0.4)
+                self.mtl_loss.log_vars.data[2].clamp_(min=0.25)
 
                 batch_size = X.size(0)
 
                 # Champion Accuracy
-                acc_res = calculate_metrics(champ_logits, y_champ, k_list=[1, 5, 8])
+                acc_res = calculate_metrics(champ_logits, y_champ, k_list=[1, 5, 10])
                 epoch_metrics["acc_c_1"] += acc_res[1]
                 epoch_metrics["acc_c_5"] += acc_res[5]
-                epoch_metrics["acc_c_8"] += acc_res[8]
+                epoch_metrics["acc_c_10"] += acc_res[10]
                 epoch_metrics["count_c"] += batch_size
 
                 # Role Accuracy & Winrate Diff
@@ -195,31 +205,51 @@ class TrainerClass:
                 "loss": epoch_metrics["loss"] / epoch_metrics["count_c"],
                 "acc_champ_top1": epoch_metrics["acc_c_1"] / epoch_metrics["count_c"],
                 "acc_champ_top5": epoch_metrics["acc_c_5"] / epoch_metrics["count_c"],
-                "acc_champ_top8": epoch_metrics["acc_c_8"] / epoch_metrics["count_c"],
+                "acc_champ_top10": epoch_metrics["acc_c_10"] / epoch_metrics["count_c"],
                 "acc_role": epoch_metrics["acc_r"] / max(1, epoch_metrics["count_r"]),
                 "wr_mae": epoch_metrics["wr_mae"] / max(1, epoch_metrics["count_w"]),
             }
 
+            self.logger.info(f"TRAIN RESULTS Ep {epoch+1}:")
+
             for k, v in avg_metrics.items():
                 self.writer.add_scalar(f"Train/{k}", v, epoch)
+                if k == "loss":
+                    self.logger.info(f"  > {k} : {v:.4f}")
+                else:
+                    self.logger.info(f"  > {k} : {v:.2%}")
 
-            self.logger.info(f"TRAIN RESULTS Ep {epoch+1}:")
-            self.logger.info(f" > Loss: {avg_metrics['loss']:.4f}")
-            self.logger.info(
-                f" > Champ Acc (Top1/Top5/Top8): "
-                f"{avg_metrics['acc_champ_top1']:.2%} / "
-                f"{avg_metrics['acc_champ_top5']:.2%} / "
-                f"{avg_metrics['acc_champ_top8']:.2%}"
-            )
-            self.logger.info(f" > Role Acc : {avg_metrics['acc_role']:.2%}")
-            self.logger.info(f" > Winrate Avg Error: {avg_metrics['wr_mae']:.2%}")
+            # Validation & Early Stopping
+            val_top10_acc = self.evaluate(epoch)
 
-            self.logger.info(
-                f"After epoch, value of loss weight {self.mtl_loss.log_vars}"
-            )
+            if val_top10_acc > self.best_val_metric:
+                self.best_val_metric = val_top10_acc
+                self.epochs_no_improve = 0
+                self.logger.info(
+                    "Validation metric improved! Saving model with top10 Acc: "
+                    f"{val_top10_acc:.2%}"
+                )
+                self.__save_checkpoint(epoch, val_top10_acc)
+            else:
+                self.epochs_no_improve += 1
+                self.logger.info(
+                    "No improvement in Val top10 Acc. "
+                    f"Patience: {self.epochs_no_improve}/{self.patience}"
+                )
 
-            # Validation
-            self.evaluate(epoch)
+            if self.epochs_no_improve == self.patience:
+                self.logger.info(
+                    f"Early stopping triggered after {self.patience} "
+                    "epochs without improvement."
+                )
+                os.rename(
+                    self.model_filename,
+                    self.model_filename.split(".")[0]
+                    + "_"
+                    + str(self.best_val_metric * 10000)[:4]
+                    + ".pth",
+                )
+                break
 
     def evaluate(self, epoch):
 
@@ -230,7 +260,7 @@ class TrainerClass:
             "loss": 0.0,
             "acc_c_1": 0.0,
             "acc_c_5": 0.0,
-            "acc_c_8": 0.0,
+            "acc_c_10": 0.0,
             "acc_r": 0.0,
             "wr_mae": 0.0,
             "count_c": 0,
@@ -295,10 +325,10 @@ class TrainerClass:
                 val_metrics["count_c"] += batch_size
 
                 # Champ Accuracy
-                acc_res = calculate_metrics(champ_logits, y_champ, k_list=[1, 5, 8])
+                acc_res = calculate_metrics(champ_logits, y_champ, k_list=[1, 5, 10])
                 val_metrics["acc_c_1"] += acc_res[1]
                 val_metrics["acc_c_5"] += acc_res[5]
-                val_metrics["acc_c_8"] += acc_res[8]
+                val_metrics["acc_c_10"] += acc_res[10]
 
                 # Role Accuracy & Winrate Diff
                 if mask.any():
@@ -317,29 +347,27 @@ class TrainerClass:
                     val_metrics["wr_mae"] += mae
                     val_metrics["count_w"] += n_picks
 
-            # Final averages
-            avg_val = {
-                "loss": val_metrics["loss"] / val_metrics["count_c"],
-                "acc_champ_top1": val_metrics["acc_c_1"] / val_metrics["count_c"],
-                "acc_champ_top5": val_metrics["acc_c_5"] / val_metrics["count_c"],
-                "acc_champ_top8": val_metrics["acc_c_8"] / val_metrics["count_c"],
-                "acc_role": val_metrics["acc_r"] / max(1, val_metrics["count_r"]),
-                "wr_mae": val_metrics["wr_mae"] / max(1, val_metrics["count_w"]),
-            }
+        # Final averages
+        avg_val = {
+            "loss": val_metrics["loss"] / val_metrics["count_c"],
+            "acc_champ_top1": val_metrics["acc_c_1"] / val_metrics["count_c"],
+            "acc_champ_top5": val_metrics["acc_c_5"] / val_metrics["count_c"],
+            "acc_champ_top10": val_metrics["acc_c_10"] / val_metrics["count_c"],
+            "acc_role": val_metrics["acc_r"] / max(1, val_metrics["count_r"]),
+            "wr_mae": val_metrics["wr_mae"] / max(1, val_metrics["count_w"]),
+        }
 
-            # LOGGING TENSORBOARD (Validation)
-            for k, v in avg_val.items():
-                self.writer.add_scalar(f"Val/{k}", v, epoch)
+        self.logger.info(f"VAL RESULTS Ep {epoch+1}:")
+        # LOGGING TENSORBOARD (Validation)
+        for k, v in avg_val.items():
+            self.writer.add_scalar(f"Train/{k}", v, epoch)
+            if k == "loss":
+                self.logger.info(f"  > {k} : {v:.4f}")
+            else:
+                self.logger.info(f"  > {k} : {v:.2%}")
 
-            self.logger.info(f"VAL RESULTS Ep {epoch+1}:")
-            self.logger.info(f" > Loss: {avg_val['loss']:.4f}")
-            self.logger.info(
-                f" > Champ Acc (Top1/Top5/Top8): "
-                f"{avg_val['acc_champ_top1']:.2%} / {avg_val['acc_champ_top5']:.2%} / "
-                f"{avg_val['acc_champ_top8']:.2%}"
-            )
-            self.logger.info(f" > Role Acc : {avg_val['acc_role']:.2%}")
-            self.logger.info(f" > Winrate Avg Error: {avg_val['wr_mae']:.2%}")
+        self.model.train()
+        return avg_val["acc_champ_top10"]
 
     def sanity_check(self):
         self.logger.info("Started sanity check (Overfitting 1 Batch)")
@@ -461,7 +489,7 @@ class TrainerClass:
             self.warmup_steps[1],
             max(
                 self.warmup_steps[0],
-                int(self.warmup_steps[0] * (self.batch_size / 64)),
+                int(self.warmup_steps[0] * (self.batch_size / 256)),
             ),
         )
 
@@ -503,3 +531,24 @@ class TrainerClass:
         self.loss_champ = nn.CrossEntropyLoss()
         self.loss_role = nn.CrossEntropyLoss()
         self.loss_wr = nn.BCEWithLogitsLoss()
+
+    def __save_checkpoint(self, epoch, metric):
+        """Save best model (Top-10 Acc)"""
+        torch.save(
+            {
+                "epoch": epoch,
+                "model_state_dict": self.model.state_dict(),
+                "optimizer_state_dict": self.opt.state_dict(),
+                "scheduler_state_dict": self.scheduler.state_dict(),
+                "best_val_metric": metric,
+                "mtl_loss_log_vars": self.mtl_loss.log_vars.data,
+            },
+            self.model_filename,
+        )
+        self.logger.info(f"Model saved to {self.model_filename}")
+
+    def __build_early_stopping(self):
+        """Initialisation des variables pour l'early stopping et le checkpointing"""
+        self.best_val_metric = -float("inf")
+        self.epochs_no_improve = 0
+        self.model_filename = os.path.join(self.save_dir, "best_model.pth")

@@ -11,7 +11,13 @@ from src.ML_training.utils import preprocess_and_save
 from src.analysis.dataset_analysis import DatasetAnalysis
 from src.data_scrapping.dataset import Dataset
 from src.utils.champions_helper import champName_to_champId
-from src.utils.constants import DATASETS_FOLDER, ELOS, REGIONS, SAVE_AFTER_ITERATION
+from src.utils.constants import (
+    DATASETS_FOLDER,
+    ELOS,
+    MLP_CHECKPOINTS,
+    REGIONS,
+    SAVE_AFTER_ITERATION,
+)
 from src.utils.data_helper import (
     load_scrapped_data,
 )
@@ -169,9 +175,9 @@ if __name__ == "__main__":
             num_champions=171,
             num_roles=5,
             mode="learnable",
-            embed_size=128,
+            embed_size=96,
             hidden_dim=1024,
-            num_res_blocks=3,
+            num_res_blocks=4,
             dropout=0.4,
         )
 
@@ -179,9 +185,11 @@ if __name__ == "__main__":
             model=mlp_model,
             batch_size=512,
             num_epochs=20,
-            base_lr=2e-4,
-            weight_decay=1e-3,
+            base_lr=4e-4,
+            weight_decay=4e-3,
             experiment_name="draft_mlp_v2",
+            patience=3,
+            save_dir=MLP_CHECKPOINTS,
         )
 
         trainer.train()

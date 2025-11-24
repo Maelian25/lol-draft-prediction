@@ -64,3 +64,6 @@ env_bot_draft
 
 # Training run logs
 /runs
+
+# Model Checkpoints 
+data/MLP_checkpoints
