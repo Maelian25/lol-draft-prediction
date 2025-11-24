@@ -91,7 +91,7 @@ if __name__ == "__main__":
         df_world: pd.DataFrame = pd.concat(df_world_list, ignore_index=True)
 
         # Analysing patches on the dataset
-        patches = ["15.19", "15.20", "15.21"]
+        patches = ["15.22"]
         analysis_patch = DatasetAnalysis(df_world, patches)
 
         logger.info("Global data analysis on the dataset")
@@ -163,11 +163,26 @@ if __name__ == "__main__":
         matches_states = analysis_patch.build_matches_states()
 
         # Process matches to be torch ready and load faster for training
-        preprocess_and_save(matches_states)
+        preprocess_and_save(matches_states, rebuild=False)
 
-        mlp_model = DraftMLPModel(num_champions=171, num_roles=5, mode="learnable")
+        mlp_model = DraftMLPModel(
+            num_champions=171,
+            num_roles=5,
+            mode="learnable",
+            embed_size=128,
+            hidden_dim=1024,
+            num_res_blocks=3,
+            dropout=0.4,
+        )
 
-        trainer = TrainerClass(model=mlp_model)
+        trainer = TrainerClass(
+            model=mlp_model,
+            batch_size=512,
+            num_epochs=20,
+            base_lr=2e-4,
+            weight_decay=1e-3,
+            experiment_name="draft_mlp_v2",
+        )
 
         trainer.train()
 

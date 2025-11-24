@@ -27,8 +27,9 @@ class TrainerClass:
         data_folder=DATA_REPRESENTATION_FOLDER,
         data_file=DRAFT_STATES_TORCH,
         num_epochs=25,
-        batch_size=64,
-        base_lr=1e-4,
+        batch_size=512,
+        base_lr=1e-3,
+        weight_decay=2e-2,
         warmup_steps=[500, 2000],
         device="cuda" if torch.cuda.is_available() else "cpu",
         experiment_name="draft_v1",
@@ -44,6 +45,7 @@ class TrainerClass:
         self.batch_size = batch_size
         self.num_epochs = num_epochs
         self.base_lr = base_lr
+        self.weight_decay = weight_decay
         self.warmup_steps = warmup_steps
 
         self.model: DraftMLPModel = model.to(device)
@@ -81,6 +83,7 @@ class TrainerClass:
                 "loss_w": 0.0,
                 "acc_c_1": 0.0,  # Champion Accuracy
                 "acc_c_5": 0.0,  # Champion Accuracy
+                "acc_c_8": 0.0,  # Champion Accuracy
                 "acc_r": 0.0,  # Role Accuracy
                 "wr_mae": 0.0,  # Winrate Mean Absolute Error
                 "count_c": 0,
@@ -148,13 +151,16 @@ class TrainerClass:
                 self.scaler.step(self.opt)
                 self.scaler.update()
                 self.scheduler.step()
+                self.mtl_loss.log_vars.data[0].clamp_(max=-0.5)
+                self.mtl_loss.log_vars.data[2].clamp_(min=0.3)
 
                 batch_size = X.size(0)
 
                 # Champion Accuracy
-                acc_res = calculate_metrics(champ_logits, y_champ, k_list=[1, 5])
+                acc_res = calculate_metrics(champ_logits, y_champ, k_list=[1, 5, 8])
                 epoch_metrics["acc_c_1"] += acc_res[1]
                 epoch_metrics["acc_c_5"] += acc_res[5]
+                epoch_metrics["acc_c_8"] += acc_res[8]
                 epoch_metrics["count_c"] += batch_size
 
                 # Role Accuracy & Winrate Diff
@@ -189,6 +195,7 @@ class TrainerClass:
                 "loss": epoch_metrics["loss"] / epoch_metrics["count_c"],
                 "acc_champ_top1": epoch_metrics["acc_c_1"] / epoch_metrics["count_c"],
                 "acc_champ_top5": epoch_metrics["acc_c_5"] / epoch_metrics["count_c"],
+                "acc_champ_top8": epoch_metrics["acc_c_8"] / epoch_metrics["count_c"],
                 "acc_role": epoch_metrics["acc_r"] / max(1, epoch_metrics["count_r"]),
                 "wr_mae": epoch_metrics["wr_mae"] / max(1, epoch_metrics["count_w"]),
             }
@@ -199,12 +206,17 @@ class TrainerClass:
             self.logger.info(f"TRAIN RESULTS Ep {epoch+1}:")
             self.logger.info(f" > Loss: {avg_metrics['loss']:.4f}")
             self.logger.info(
-                f" > Champ Acc (Top1/Top5): "
+                f" > Champ Acc (Top1/Top5/Top8): "
                 f"{avg_metrics['acc_champ_top1']:.2%} / "
-                f"{avg_metrics['acc_champ_top5']:.2%}"
+                f"{avg_metrics['acc_champ_top5']:.2%} / "
+                f"{avg_metrics['acc_champ_top8']:.2%}"
             )
             self.logger.info(f" > Role Acc : {avg_metrics['acc_role']:.2%}")
             self.logger.info(f" > Winrate Avg Error: {avg_metrics['wr_mae']:.2%}")
+
+            self.logger.info(
+                f"After epoch, value of loss weight {self.mtl_loss.log_vars}"
+            )
 
             # Validation
             self.evaluate(epoch)
@@ -218,6 +230,7 @@ class TrainerClass:
             "loss": 0.0,
             "acc_c_1": 0.0,
             "acc_c_5": 0.0,
+            "acc_c_8": 0.0,
             "acc_r": 0.0,
             "wr_mae": 0.0,
             "count_c": 0,
@@ -282,9 +295,10 @@ class TrainerClass:
                 val_metrics["count_c"] += batch_size
 
                 # Champ Accuracy
-                acc_res = calculate_metrics(champ_logits, y_champ, k_list=[1, 5])
+                acc_res = calculate_metrics(champ_logits, y_champ, k_list=[1, 5, 8])
                 val_metrics["acc_c_1"] += acc_res[1]
                 val_metrics["acc_c_5"] += acc_res[5]
+                val_metrics["acc_c_8"] += acc_res[8]
 
                 # Role Accuracy & Winrate Diff
                 if mask.any():
@@ -308,6 +322,7 @@ class TrainerClass:
                 "loss": val_metrics["loss"] / val_metrics["count_c"],
                 "acc_champ_top1": val_metrics["acc_c_1"] / val_metrics["count_c"],
                 "acc_champ_top5": val_metrics["acc_c_5"] / val_metrics["count_c"],
+                "acc_champ_top8": val_metrics["acc_c_8"] / val_metrics["count_c"],
                 "acc_role": val_metrics["acc_r"] / max(1, val_metrics["count_r"]),
                 "wr_mae": val_metrics["wr_mae"] / max(1, val_metrics["count_w"]),
             }
@@ -319,8 +334,9 @@ class TrainerClass:
             self.logger.info(f"VAL RESULTS Ep {epoch+1}:")
             self.logger.info(f" > Loss: {avg_val['loss']:.4f}")
             self.logger.info(
-                f" > Champ Acc (Top1/Top5): "
-                f"{avg_val['acc_champ_top1']:.2%} / {avg_val['acc_champ_top5']:.2%}"
+                f" > Champ Acc (Top1/Top5/Top8): "
+                f"{avg_val['acc_champ_top1']:.2%} / {avg_val['acc_champ_top5']:.2%} / "
+                f"{avg_val['acc_champ_top8']:.2%}"
             )
             self.logger.info(f" > Role Acc : {avg_val['acc_role']:.2%}")
             self.logger.info(f" > Winrate Avg Error: {avg_val['wr_mae']:.2%}")
@@ -445,15 +461,19 @@ class TrainerClass:
             self.warmup_steps[1],
             max(
                 self.warmup_steps[0],
-                int(self.warmup_steps[0] * (self.batch_size / 128)),
+                int(self.warmup_steps[0] * (self.batch_size / 64)),
             ),
         )
 
         self.logger.info(f"Learning rate : {self.base_lr}")
         self.logger.info(f"Warmup steps : {clamped_warmup_steps}")
 
+        self.mtl_loss = MultiTaskLossWrapper(num_tasks=3).to(self.device)
+
         self.opt = torch.optim.AdamW(
-            self.model.parameters(), lr=self.base_lr, weight_decay=5e-2
+            list(self.model.parameters()) + list(self.mtl_loss.parameters()),
+            lr=self.base_lr,
+            weight_decay=self.weight_decay,
         )
 
         warmup_scheduler = LinearLR(
@@ -483,5 +503,3 @@ class TrainerClass:
         self.loss_champ = nn.CrossEntropyLoss()
         self.loss_role = nn.CrossEntropyLoss()
         self.loss_wr = nn.BCEWithLogitsLoss()
-
-        self.mtl_loss = MultiTaskLossWrapper(num_tasks=3).to(self.device)
