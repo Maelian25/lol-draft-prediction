@@ -8,6 +8,7 @@ ELOS = dict({"challenger": 300, "grandmaster": 700, "master": 2000})
 DATA_REPRESENTATION_FOLDER = "./data/representation/"
 MODELS_PARAMETER_FOLDER = "./data/models_parameter/"
 MLP_CHECKPOINTS = "./data/MLP_checkpoints"
+TRANSFORMER_CHECKPOINTS = "./data/TRANSFORMER_checkpoints"
 MATRICES_FOLDER = "./data/matrices/"
 DATASETS_FOLDER = "./data/datasets/"
 

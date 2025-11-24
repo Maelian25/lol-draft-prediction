@@ -67,3 +67,4 @@ env_bot_draft
 
 # Model Checkpoints 
 data/MLP_checkpoints
+data/TRANSFORMER_checkpoints
