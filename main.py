@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from src.ML_models.draft_MLP import DraftMLPModel
+from src.ML_models.draft_transformer import DraftTransformer
 from src.ML_training.trainer import TrainerClass
 from src.ML_training.utils import preprocess_and_save
 from src.analysis.dataset_analysis import DatasetAnalysis
@@ -17,6 +18,7 @@ from src.utils.constants import (
     MLP_CHECKPOINTS,
     REGIONS,
     SAVE_AFTER_ITERATION,
+    TRANSFORMER_CHECKPOINTS,
 )
 from src.utils.data_helper import (
     load_scrapped_data,
@@ -181,18 +183,42 @@ if __name__ == "__main__":
             dropout=0.4,
         )
 
-        trainer = TrainerClass(
+        mlp_trainer = TrainerClass(
             model=mlp_model,
             batch_size=512,
             num_epochs=20,
             base_lr=4e-4,
             weight_decay=4e-3,
-            experiment_name="draft_mlp_v2",
+            loss_weights_init=[-0.8, 0.0, 0.5],
+            experiment_name="draft_MLP_v1",
             patience=3,
             save_dir=MLP_CHECKPOINTS,
         )
 
-        trainer.train()
+        transformer_model = DraftTransformer(
+            num_champions=171,
+            num_roles=5,
+            dim_feedforward=1024,
+            nhead=8,
+            d_model=256,
+            num_layers=5,
+            dropout=0.2,
+        )
+
+        transformer_trainer = TrainerClass(
+            model=transformer_model,
+            batch_size=512,
+            num_epochs=40,
+            base_lr=5e-5,
+            weight_decay=1e-3,
+            loss_weights_init=[0.0, 0.0, 0.693],
+            grads_for_weights=False,
+            experiment_name="draft_transformer_v2",
+            patience=7,
+            save_dir=TRANSFORMER_CHECKPOINTS,
+        )
+
+        transformer_trainer.train()
 
     except Exception as e:
         logger.critical(f"Fatal error: {e}", exc_info=True)
