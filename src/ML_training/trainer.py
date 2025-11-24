@@ -9,6 +9,7 @@ from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 from tqdm import tqdm
 
 from src.ML_models.draft_MLP import DraftMLPModel
+from src.ML_models.draft_transformer import DraftTransformer
 from src.ML_training.dataset import DraftDataset
 from src.ML_training.utils import MultiTaskLossWrapper, calculate_metrics
 from src.utils.logger_config import get_logger
@@ -35,6 +36,8 @@ class TrainerClass:
         base_lr=1e-3,
         weight_decay=2e-2,
         warmup_steps=[500, 2000],
+        loss_weights_init=[-0.8, 0.0, 0.5],
+        grads_for_weights=True,
         device="cuda" if torch.cuda.is_available() else "cpu",
         experiment_name="draft_v1",
         patience=5,
@@ -53,11 +56,13 @@ class TrainerClass:
         self.base_lr = base_lr
         self.weight_decay = weight_decay
         self.warmup_steps = warmup_steps
+        self.loss_weights_init = loss_weights_init
+        self.grads_for_weights = grads_for_weights
         self.patience = patience
         self.save_dir = save_dir
         os.makedirs(self.save_dir, exist_ok=True)
 
-        self.model: DraftMLPModel = model.to(device)
+        self.model: DraftMLPModel | DraftTransformer = model.to(device)
 
         self.logger.info(f"PyTorch version: {torch.__version__}")
         self.logger.info(f"CUDA available: {torch.cuda.is_available()}")
@@ -70,7 +75,7 @@ class TrainerClass:
 
         self.__build_dataset()
         self.__training_fns()
-        self.__build_early_stopping()  # NOUVEAU
+        self.__build_early_stopping()
 
         self.logger.info(
             f"Parameters in use : Batch size = {batch_size} | Device = {device} | "
@@ -161,8 +166,9 @@ class TrainerClass:
                 self.scaler.step(self.opt)
                 self.scaler.update()
                 self.scheduler.step()
-                self.mtl_loss.log_vars.data[0].clamp_(max=-0.4)
-                self.mtl_loss.log_vars.data[2].clamp_(min=0.25)
+                if self.model.__class__.__name__ == "DraftMLPModel":
+                    self.mtl_loss.log_vars.data[0].clamp_(max=-0.4)
+                    self.mtl_loss.log_vars.data[2].clamp_(min=0.25)
 
                 batch_size = X.size(0)
 
@@ -242,14 +248,16 @@ class TrainerClass:
                     f"Early stopping triggered after {self.patience} "
                     "epochs without improvement."
                 )
-                os.rename(
-                    self.model_filename,
-                    self.model_filename.split(".")[0]
-                    + "_"
-                    + str(self.best_val_metric * 10000)[:4]
-                    + ".pth",
-                )
                 break
+
+        os.rename(
+            self.model_filename,
+            "."
+            + self.model_filename.split(".")[1]
+            + "_"
+            + str(self.best_val_metric * 10000)[:4]
+            + ".pth",
+        )
 
     def evaluate(self, epoch):
 
@@ -360,7 +368,7 @@ class TrainerClass:
         self.logger.info(f"VAL RESULTS Ep {epoch+1}:")
         # LOGGING TENSORBOARD (Validation)
         for k, v in avg_val.items():
-            self.writer.add_scalar(f"Train/{k}", v, epoch)
+            self.writer.add_scalar(f"Val/{k}", v, epoch)
             if k == "loss":
                 self.logger.info(f"  > {k} : {v:.4f}")
             else:
@@ -496,7 +504,9 @@ class TrainerClass:
         self.logger.info(f"Learning rate : {self.base_lr}")
         self.logger.info(f"Warmup steps : {clamped_warmup_steps}")
 
-        self.mtl_loss = MultiTaskLossWrapper(num_tasks=3).to(self.device)
+        self.mtl_loss = MultiTaskLossWrapper(
+            vec_init=self.loss_weights_init, requires_grad=self.grads_for_weights
+        ).to(self.device)
 
         self.opt = torch.optim.AdamW(
             list(self.model.parameters()) + list(self.mtl_loss.parameters()),

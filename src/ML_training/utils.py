@@ -131,11 +131,11 @@ def calculate_metrics(logits: torch.Tensor, targets: torch.Tensor, k_list=[1, 5]
 
 class MultiTaskLossWrapper(nn.Module):
 
-    def __init__(self, num_tasks=3):
-        super(MultiTaskLossWrapper, self).__init__()
+    def __init__(self, vec_init, requires_grad):
+        super().__init__()
 
-        initial_log_vars = torch.tensor([-0.8, 0.0, 0.5], device="cuda:0")
-        self.log_vars = nn.Parameter(initial_log_vars)
+        initial_log_vars = torch.tensor(vec_init, device="cuda:0")
+        self.log_vars = nn.Parameter(initial_log_vars, requires_grad=requires_grad)
 
     def forward(self, loss_champ, loss_role, loss_win):
         # Formulas from Kendall et al. (CVPR 2018)
