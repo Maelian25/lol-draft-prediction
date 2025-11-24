@@ -16,6 +16,7 @@ from src.utils.logger_config import get_logger
 from src.utils.constants import (
     DATA_REPRESENTATION_FOLDER,
     DRAFT_STATES_TORCH,
+    TRANSFORMER_CHECKPOINTS,
 )
 
 
@@ -42,6 +43,7 @@ class TrainerClass:
         experiment_name="draft_v1",
         patience=5,
         save_dir="./data",
+        load_from_checkpoint=False,
     ) -> None:
 
         self.logger = get_logger(self.__class__.__name__, "draft_training.log")
@@ -81,6 +83,18 @@ class TrainerClass:
             f"Parameters in use : Batch size = {batch_size} | Device = {device} | "
             f"Num epochs = {num_epochs} | Patience = {patience}"
         )
+
+        if load_from_checkpoint:
+            checkpoint = torch.load(
+                os.path.join(TRANSFORMER_CHECKPOINTS, "best_model_3579.pth"),
+                map_location=self.device,
+            )
+            self.model.load_state_dict(checkpoint["model_state_dict"])
+            self.opt.load_state_dict(checkpoint["optimizer_state_dict"])
+            self.scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+            self.best_val_metric = checkpoint["best_val_metric"]
+
+            self.logger.info("Checkpoint successfully loaded !")
 
     def train(self):
 

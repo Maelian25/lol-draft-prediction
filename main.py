@@ -211,11 +211,12 @@ if __name__ == "__main__":
             num_epochs=40,
             base_lr=5e-5,
             weight_decay=1e-3,
-            loss_weights_init=[0.0, 0.0, 0.693],
+            loss_weights_init=[0.0, 0.0, 0.0],
             grads_for_weights=False,
             experiment_name="draft_transformer_v2",
             patience=7,
             save_dir=TRANSFORMER_CHECKPOINTS,
+            load_from_checkpoint=True,
         )
 
         transformer_trainer.train()

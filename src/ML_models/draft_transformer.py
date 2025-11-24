@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch.nn.functional as F
 import torch
 
 from src.ML_models.utils import head_mlp
@@ -38,6 +39,7 @@ class DraftTransformer(nn.Module):
             dropout=dropout,
             batch_first=True,
             norm_first=True,
+            activation=F.gelu,
         )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
