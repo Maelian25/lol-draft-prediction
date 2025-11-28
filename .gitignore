@@ -60,7 +60,8 @@ ENV/
 env.bak/
 venv.bak/
 .venv
-env_bot_draft
+env_bot_draft_py312
+env_bot_draft_py313
 
 # Training run logs
 /runs
