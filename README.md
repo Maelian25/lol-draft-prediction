@@ -156,9 +156,3 @@ specifications (two ban phases and two pick phases). See
   easier to follow.
 - Consider adding `--only-analysis` or `--only-scrape` flags if you
   want to run one stage at a time.
-
-## Contribution
-
-Contributions are welcome. Open issues to discuss designs or submit PRs
-for bug fixes, tests, or features. Please keep changes focused and
-document behavior in the README when adding CLI options.
