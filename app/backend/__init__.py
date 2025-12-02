@@ -1,4 +1,1 @@
-import os
-import sys
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+"""Backend module for the League of Legends draft prediction API."""
