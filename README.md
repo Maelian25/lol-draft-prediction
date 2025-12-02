@@ -5,7 +5,7 @@ A machine learning project to predict optimal champion picks during the draft ph
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-in%20development-yellow.svg)
-# lol-draft-prediction
+# League of Legends Draft Prediction
 
 League of Legends Draft Prediction — a Python project for collecting,
 analyzing, and training models to predict champion picks and bans during
