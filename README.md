@@ -57,6 +57,7 @@ python -m venv .venv
 ```
 
 2. Install dependencies:
+Make sure to modify requirements.txt according to the gpu you are using
 
 ```powershell
 pip install -r requirements.txt
