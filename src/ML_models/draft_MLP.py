@@ -82,7 +82,7 @@ class DraftMLPModel(nn.Module):
                 4 * self.team_size * embed_size + step_embed_size + step_embed_size
             )
 
-        self.logger.info(f"Input dim for {mode}: {input_dim}")
+        self.logger.info(f"Input dim using {mode} mode : {input_dim}")
 
         # Backbone (shared representation)
         self.input_projection = nn.Linear(input_dim, hidden_dim)
