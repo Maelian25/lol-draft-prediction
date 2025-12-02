@@ -508,8 +508,7 @@ class TrainerClass:
             train_subset,
             batch_size=self.batch_size,
             shuffle=True,
-            num_workers=4,
-            persistent_workers=True,
+            num_workers=0,  # Windows-compatible: avoid multiprocessing
             pin_memory=True,
             drop_last=True,
         )
