@@ -122,31 +122,10 @@ class TrainerClass:
 
             pbar = tqdm(self.train_loader, desc=f"Train Ep {epoch+1}")
 
-            for batch in pbar:
+            try:
+                for batch in pbar:
 
-                (
-                    X,
-                    bp,
-                    rp,
-                    bb,
-                    rb,
-                    champ_mask,
-                    b_role_mask,
-                    r_role_mask,
-                    step_idx,
-                    side,
-                    phase,
-                    y_pick,
-                    y_ban,
-                    y_role,
-                    y_wr,
-                ) = [b.to(self.device, non_blocking=True) for b in batch]
-
-                self.opt.zero_grad()
-
-                with torch.autocast(self.device, dtype=torch.float32):
-
-                    champ_logits, role_logits, wr_logits = self.model(
+                    (
                         X,
                         bp,
                         rp,
@@ -158,68 +137,106 @@ class TrainerClass:
                         step_idx,
                         side,
                         phase,
+                        y_pick,
+                        y_ban,
+                        y_role,
+                        y_wr,
+                    ) = [b.to(self.device, non_blocking=True) for b in batch]
+
+                    self.opt.zero_grad()
+
+                    with torch.autocast(self.device, dtype=torch.float32):
+
+                        champ_logits, role_logits, wr_logits = self.model(
+                            X,
+                            bp,
+                            rp,
+                            bb,
+                            rb,
+                            champ_mask,
+                            b_role_mask,
+                            r_role_mask,
+                            step_idx,
+                            side,
+                            phase,
+                        )
+
+                        # Champ loss
+                        y_champ = torch.where(phase == 1, y_pick, y_ban)
+                        loss_c = self.loss_champ(champ_logits, y_champ)
+
+                        # Role loss and winrate loss
+                        mask = phase == 1
+
+                        loss_r = torch.tensor(0.0, device=self.device)
+                        loss_w = torch.tensor(0.0, device=self.device)
+
+                        if mask.any():
+                            loss_r = self.loss_role(role_logits[mask], y_role[mask])
+                            loss_w = self.loss_wr(
+                                wr_logits[mask].squeeze(-1), y_wr[mask]
+                            )
+
+                        loss = self.mtl_loss(loss_c, loss_r, loss_w)
+
+                    self.scaler.scale(loss).backward()
+                    self.scaler.step(self.opt)
+                    self.scaler.update()
+                    self.scheduler.step()
+                    torch.cuda.synchronize() if self.device == "cuda" else None
+                    if self.model.__class__.__name__ == "DraftMLPModel":
+                        self.mtl_loss.log_vars.data[0].clamp_(max=-0.4)
+                        self.mtl_loss.log_vars.data[2].clamp_(min=0.25)
+
+                    batch_size = X.size(0)
+
+                    # Champion Accuracy
+                    acc_res = calculate_metrics(
+                        champ_logits, y_champ, k_list=[1, 5, 10]
                     )
+                    epoch_metrics["acc_c_1"] += acc_res[1]
+                    epoch_metrics["acc_c_5"] += acc_res[5]
+                    epoch_metrics["acc_c_10"] += acc_res[10]
+                    epoch_metrics["count_c"] += batch_size
 
-                    # Champ loss
-                    y_champ = torch.where(phase == 1, y_pick, y_ban)
-                    loss_c = self.loss_champ(champ_logits, y_champ)
-
-                    # Role loss and winrate loss
-                    mask = phase == 1
-
-                    loss_r = torch.tensor(0.0, device=self.device)
-                    loss_w = torch.tensor(0.0, device=self.device)
-
+                    # Role Accuracy & Winrate Diff
                     if mask.any():
-                        loss_r = self.loss_role(role_logits[mask], y_role[mask])
-                        loss_w = self.loss_wr(wr_logits[mask].squeeze(-1), y_wr[mask])
+                        n_picks = mask.sum().item()
 
-                    loss = self.mtl_loss(loss_c, loss_r, loss_w)
+                        # Role
+                        acc_r_res = calculate_metrics(
+                            role_logits[mask], y_role[mask], k_list=[1]
+                        )
+                        epoch_metrics["acc_r"] += acc_r_res[1]
+                        epoch_metrics["count_r"] += n_picks
 
-                self.scaler.scale(loss).backward()
-                self.scaler.step(self.opt)
-                self.scaler.update()
-                self.scheduler.step()
-                if self.model.__class__.__name__ == "DraftMLPModel":
-                    self.mtl_loss.log_vars.data[0].clamp_(max=-0.4)
-                    self.mtl_loss.log_vars.data[2].clamp_(min=0.25)
+                        # Winrate: logit conversion
+                        probs_wr = torch.sigmoid(wr_logits[mask].squeeze(-1))
+                        # MAE: (|pred - real|)
+                        mae = torch.abs(probs_wr - y_wr[mask]).sum().item()
+                        epoch_metrics["wr_mae"] += mae
+                        epoch_metrics["count_w"] += n_picks
 
-                batch_size = X.size(0)
-
-                # Champion Accuracy
-                acc_res = calculate_metrics(champ_logits, y_champ, k_list=[1, 5, 10])
-                epoch_metrics["acc_c_1"] += acc_res[1]
-                epoch_metrics["acc_c_5"] += acc_res[5]
-                epoch_metrics["acc_c_10"] += acc_res[10]
-                epoch_metrics["count_c"] += batch_size
-
-                # Role Accuracy & Winrate Diff
-                if mask.any():
-                    n_picks = mask.sum().item()
-
-                    # Role
-                    acc_r_res = calculate_metrics(
-                        role_logits[mask], y_role[mask], k_list=[1]
+                    # Accumulate losses
+                    epoch_metrics["loss"] += loss.item() * batch_size
+                    epoch_metrics["loss_c"] += loss_c.item() * batch_size
+                    epoch_metrics["loss_r"] += (
+                        loss_r.item() * batch_size if mask.any() else 0
                     )
-                    epoch_metrics["acc_r"] += acc_r_res[1]
-                    epoch_metrics["count_r"] += n_picks
+                    epoch_metrics["loss_w"] += (
+                        loss_w.item() * batch_size if mask.any() else 0
+                    )
 
-                    # Winrate: logit conversion
-                    probs_wr = torch.sigmoid(wr_logits[mask].squeeze(-1))
-                    # MAE: (|pred - real|)
-                    mae = torch.abs(probs_wr - y_wr[mask]).sum().item()
-                    epoch_metrics["wr_mae"] += mae
-                    epoch_metrics["count_w"] += n_picks
+                    torch.cuda.synchronize() if self.device == "cuda" else None
 
-                # Accumulate losses
-                epoch_metrics["loss"] += loss.item() * batch_size
-                epoch_metrics["loss_c"] += loss_c.item() * batch_size
-                epoch_metrics["loss_r"] += (
-                    loss_r.item() * batch_size if mask.any() else 0
-                )
-                epoch_metrics["loss_w"] += (
-                    loss_w.item() * batch_size if mask.any() else 0
-                )
+            except KeyboardInterrupt:
+                self.logger.info("KeyboardInterrupt detected. Exiting training loop.")
+                if self.device == "cuda":
+                    torch.cuda.synchronize()
+                    self.scaler = torch.GradScaler(enabled=False)
+
+                self.logger.info("Clean shutdown of training process.")
+                os._exit(1)
 
             avg_metrics = {
                 "loss": epoch_metrics["loss"] / epoch_metrics["count_c"],
@@ -272,6 +289,7 @@ class TrainerClass:
             + str(self.best_val_metric * 10000)[:4]
             + ".pth",
         )
+        torch.cuda.synchronize() if self.device == "cuda" else None
 
     def evaluate(self, epoch):
 
