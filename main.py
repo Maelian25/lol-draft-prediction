@@ -1,4 +1,5 @@
 import argparse
+import os
 
 from src.pipeline import scrape_world_data, run_analysis, run_training
 from src.utils.logger_config import get_logger
@@ -50,15 +51,17 @@ def main():
         matches_states = run_analysis(df_world, no_analysis=args.no_analysis)
 
         if not args.no_train:
-            run_training(
-                matches_states, rebuild=args.rebuild, model_choice=args.model
-            )
+            run_training(matches_states, rebuild=args.rebuild, model_choice=args.model)
         else:
             logger.info("Training skipped (--no-train)")
 
     except Exception as e:
         logger.critical(f"Fatal error: {e}", exc_info=True)
         raise
+
+    finally:
+        logger.info("Pipeline finished")
+        os._exit(0)
 
 
 if __name__ == "__main__":
