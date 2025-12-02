@@ -1,8 +1,8 @@
 import argparse
 import os
 
-from src.pipeline import scrape_world_data, run_analysis, run_training
-from src.utils.logger_config import get_logger
+from src.pipeline import *
+from src.utils import *
 
 logger = get_logger("Main", "main_file.log")
 

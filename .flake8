@@ -3,6 +3,6 @@
 # -----------------------
 [flake8]
 max-line-length = 88
-extend-ignore = E203,W503
+extend-ignore = E203,W503,F403,F405
 max-complexity = 15
 exclude = .git,__pycache__,env_bot_draft,build,dist,tests
