@@ -41,7 +41,9 @@ class DraftTransformer(nn.Module):
             norm_first=True,
             activation=F.gelu,
         )
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.transformer = nn.TransformerEncoder(
+            encoder_layer, num_layers=num_layers, enable_nested_tensor=False
+        )
 
         # Heads
         self.pick_head = head_mlp("pick", d_model, num_champions + 1)
