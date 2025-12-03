@@ -75,6 +75,8 @@ async def lifespan(fastapi_app: FastAPI):
 
     # Shutdown: Cleanup
     logger.info("Server shutdown initiated. Releasing resources.")
+    torch.cuda.synchronize() if torch.cuda.is_available() else None
+    logger.info("Resources released. Shutdown complete.")
 
 
 fastapi_app = FastAPI(title="Draft predictor API", lifespan=lifespan)

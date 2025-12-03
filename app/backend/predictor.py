@@ -3,6 +3,7 @@ import os
 import re
 import torch
 
+from app.backend.utils import download_models_from_s3
 from src.ML_models.draft_MLP import DraftMLPModel
 from src.ML_models.draft_transformer import DraftTransformer
 from src.ML_training.utils import expand_mask
@@ -14,6 +15,9 @@ logger = get_logger(__name__, "predictor.log")
 
 
 def get_best_checkpoint(folder: str, prefix: str) -> str | None:
+    """
+    Get the best checkpoint file from the specified folder, local development version.
+    """
     try:
         files = [
             f for f in os.listdir(folder) if f.startswith(prefix) and f.endswith(".pth")
@@ -35,13 +39,24 @@ def get_best_checkpoint(folder: str, prefix: str) -> str | None:
     return os.path.join(folder, best_file) if best_file else None
 
 
+def get_checkpoint(
+    model_type: str = "transformer",
+    folder: str = "./app/backend/models",
+) -> str:
+    if os.path.exists(os.path.join(folder, f"{model_type}_model.pth")):
+        return os.path.join(folder, f"{model_type}_model.pth")
+    else:
+        download_models_from_s3([model_type], folder)
+        return os.path.join(folder, f"{model_type}_model.pth")
+
+
 def load_models(device: str = "cpu") -> Dict[int, torch.nn.Module]:
     models: Dict[int, torch.nn.Module] = {}
 
     logger.info("Loading models on device: %s", device)
 
     # MLP
-    mlp_ckpt = get_best_checkpoint("data/MLP_checkpoints", "best_model_")
+    mlp_ckpt = get_checkpoint("mlp", "./app/backend/models")
     model_mlp = DraftMLPModel(
         num_champions=171,
         num_roles=5,
@@ -67,7 +82,7 @@ def load_models(device: str = "cpu") -> Dict[int, torch.nn.Module]:
     logger.info("MLP model ready and registered under id 1")
 
     # Transformer
-    tr_ckpt = get_best_checkpoint("data/TRANSFORMER_checkpoints", "best_model_")
+    tr_ckpt = get_checkpoint("transformer", "./app/backend/models")
     model_tr = DraftTransformer(
         num_champions=171,
         num_roles=5,
