@@ -1,4 +1,4 @@
-from app.backend import predictor
+from app.backend.src import predictor
 
 
 def test_model_shapes_mlp_and_transformer():

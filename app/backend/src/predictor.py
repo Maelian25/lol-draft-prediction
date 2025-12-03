@@ -3,7 +3,7 @@ import os
 import re
 import torch
 
-from app.backend.utils import download_models_from_s3
+from app.backend.src.utils import download_models_from_s3
 from src.ML_models.draft_MLP import DraftMLPModel
 from src.ML_models.draft_transformer import DraftTransformer
 from src.ML_training.utils import expand_mask

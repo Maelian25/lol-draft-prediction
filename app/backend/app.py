@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import torch
 
-from app.backend import predictor
+from app.backend.src import predictor
 from src.utils.logger_config import get_logger
 
 # Initialize logger for the application

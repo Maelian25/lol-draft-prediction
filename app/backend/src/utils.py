@@ -11,8 +11,10 @@ logger = get_logger(__name__, "draft_api.log")
 def create_client_s3():
     """Create and return a Boto3 S3 client using
     credentials from environment variables."""
-    # Load AWS credentials from .env file
-    load_dotenv()
+    # Load AWS credentials
+    # From .env file when running locally
+    # From environment variables in production
+    load_dotenv("./app/backend/.env")
     aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
     aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
     region_name = os.getenv("AWS_REGION")
