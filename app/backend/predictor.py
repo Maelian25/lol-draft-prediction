@@ -43,6 +43,8 @@ def get_checkpoint(
     model_type: str = "transformer",
     folder: str = "./app/backend/models",
 ) -> str:
+    """Get the checkpoint file path for the specified model type.
+    If not found locally, download from S3."""
     if os.path.exists(os.path.join(folder, f"{model_type}_model.pth")):
         return os.path.join(folder, f"{model_type}_model.pth")
     else:
@@ -51,6 +53,9 @@ def get_checkpoint(
 
 
 def load_models(device: str = "cpu") -> Dict[int, torch.nn.Module]:
+    """Load pre-trained models from disk and return a dictionary of models.
+
+    Keys are model IDs: 1=MLP, 2=Transformer."""
     models: Dict[int, torch.nn.Module] = {}
 
     logger.info("Loading models on device: %s", device)
@@ -195,6 +200,7 @@ def postprocess_output(
     wr_logits: torch.Tensor,
     id2idx: Dict[str, int],
 ) -> Dict[str, Any]:
+    """Convert model output tensors into human-readable format."""
     # top champion indices
     topk = 5
     vals = torch.topk(champ_logits, topk).indices.squeeze().tolist()
@@ -230,6 +236,7 @@ def postprocess_output(
 def predict_with_model(
     model: torch.nn.Module, tensors: Dict[str, torch.Tensor]
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Run inference with the given model and input tensors."""
     logger.debug("Running inference with model %s", model.__class__.__name__)
     outputs = model(
         tensors["X"],
