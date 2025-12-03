@@ -202,8 +202,8 @@ def postprocess_output(
 ) -> Dict[str, Any]:
     """Convert model output tensors into human-readable format."""
     # top champion indices
-    topk = 5
-    vals = torch.topk(champ_logits, topk).indices.squeeze().tolist()
+    topk_champs = 10
+    vals = torch.topk(champ_logits, topk_champs).indices.squeeze().tolist()
     if isinstance(vals, int):
         vals = [vals]
 
@@ -213,9 +213,7 @@ def postprocess_output(
     top_champs = [idx2id.get(int(i)) for i in vals]
 
     # roles
-    top_roles = torch.topk(role_logits, topk).indices.squeeze().tolist()
-    if isinstance(top_roles, int):
-        top_roles = [top_roles]
+    top_roles = torch.argmax(role_logits).squeeze().item()
 
     # winrate
     winrate = torch.sigmoid(wr_logits).squeeze().tolist()
