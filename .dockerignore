@@ -1,0 +1,17 @@
+# Exclude virtual environment directories
+.venv/
+
+# Exclude non necessary runtime files
+data/
+logs/
+runs/
+secrets/
+
+# Exclude .env.local files
+app/backend/.env.local
+
+# Exclude Dockerfile
+Dockerfile
+
+# Exlude models directory to check if it gets rebuilt
+app/backend/models/
